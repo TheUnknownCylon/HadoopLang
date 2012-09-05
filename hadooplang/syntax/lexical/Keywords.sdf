@@ -1,0 +1,38 @@
+module lexical/Keywords
+
+exports
+    
+    lexical syntax
+    	"import"   -> KeyWord
+        "module"   -> KeyWord
+        "store"    -> KeyWord
+
+        "from"     -> KeyWord
+        "with"     -> KeyWord
+        "where"    -> KeyWord
+        "write"    -> KeyWord
+
+        "List"     -> KeyWord
+        "Dict"     -> KeyWord
+        "String"   -> KeyWord
+        "Number"   -> KeyWord
+        "Boolean"  -> KeyWord
+        
+        
+        "map"      -> KeyWord
+        "reduce"   -> KeyWord
+        "for"      -> KeyWord
+        "store"    -> KeyWord
+        "in"       -> KeyWord
+        "to"       -> KeyWord
+        
+        "nowarning" -> KeyWord
+        
+        "True"     -> KeyWord
+        "False"    -> KeyWord
+        
+        "mapper"   -> KeyWord
+        "reducer"  -> KeyWord
+        "rewriter" -> KeyWord
+        
+        "_"        -> KeyWord

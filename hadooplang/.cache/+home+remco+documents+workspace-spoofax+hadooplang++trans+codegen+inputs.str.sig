@@ -1,0 +1,1 @@
+Module("trans/codegen/inputs",[Imports([(),(),(),(),(),(),(),(),(),(),()]),Rules([SDefT("to-java-input-job",[],[VarDec("jobname",ConstType(SortNoArgs("ATerm"))),VarDec("params",ConstType(SortNoArgs("ATerm")))],[])])])

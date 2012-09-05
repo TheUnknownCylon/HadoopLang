@@ -1,0 +1,30 @@
+module mytests 
+
+from athermap import mapper parseinput; 
+
+/** 
+ * For each token, calculate the number of occurences.
+ */
+reducer idf : String token : Iterator(Number) docids {
+
+    doclist := Number[];
+    
+    for docid in docids {
+        doclist[] = docid;
+    }
+    write token: doclist;
+}
+
+mapper onnozelA : String token : List(Number) l {
+    write token: l;
+}
+
+reducer onnozelB : String token : Iterator(List(Number)) l {
+    for bla in l {
+        write token: bla;
+    }
+}
+
+x1 := input lines("dataset") -> map with parseinput -> reduce with idf;
+
+store x1; 

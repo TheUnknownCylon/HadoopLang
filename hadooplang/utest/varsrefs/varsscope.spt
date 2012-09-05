@@ -1,0 +1,83 @@
+module expressions
+
+language Hadooplang
+
+setup Hadooplang program header [[
+  module testVarsscope
+]]
+
+
+test scope_normal [[
+    mapper mappy : String x: String y {
+        c := 0;
+        write "a": c;
+    }]] 0 errors
+    
+    
+test scope_updatevar [[
+    mapper mappy : String x: String y {
+        c := 0;
+        c = c + 1;                  //update var-value, first c should be ref, no def!
+        write "a": c;
+    }]] 0 errors
+    
+    
+test scope_updatevar_wrongtype [[
+    mapper mappy : String x: String y {
+        c := 0;
+        c = "a";                  //putting wrong type in c
+        write "a": c;
+    }]] 1 errors    
+
+    
+test scope_duplicate_forloop_definition [[
+    mapper mappy : String x: String y {
+        c := 0;
+        for c in Number[1,2,3] {    // c already defined
+            
+        }
+        write "a": c;
+    }]] 1 errors
+
+
+test scope_duplicate_forloop_definition_othertype [[
+    mapper mappy : String x: String y {
+        c := "a";
+        for c in Number[1,2,3] {    // c already defined
+            
+        }
+        write "a": c;
+    }]] 1 errors
+
+
+test scope_updatevar_in_scope [[
+    mapper mappy : String x: String y {
+        c := 0;
+        for z in Number[1,2,3] {
+            c = 1;
+        }
+        write "a": 1;
+    }]] 0 errors
+    
+    
+test scope_updatevar_in_scope_wrongtype[[
+    mapper mappy : String x: String y {
+        c := 0;
+        for z in Number[1,2,3] {    // c already defined
+            c = "a";
+        }
+        write "a": c;
+    }]] 1 errors
+    
+    
+test scope_def_in_loop_used_outside[[
+    mapper mappy : String x: String y {
+        for z in Number[1,2,3] {    // c already defined
+            c := z;
+        }
+        write "a": c;
+    }]] 1 errors
+    
+    
+setup Hadooplang program footer [[
+]]

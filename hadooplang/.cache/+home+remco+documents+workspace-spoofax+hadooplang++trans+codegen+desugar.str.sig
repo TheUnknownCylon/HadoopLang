@@ -1,0 +1,1 @@
+Module("trans/codegen/desugar",[Imports([(),(),(),()]),Rules([SDefT("desugar-compiler",[],[],[])]),Rules([SDefT("desugar-compile",[],[],[]),SDefT("desugar-compile-plus",[],[VarDec("varname",ConstType(SortNoArgs("ATerm")))],[]),SDefT("desugar-compile-plus",[],[VarDec("varname",ConstType(SortNoArgs("ATerm")))],[])])])

@@ -1,0 +1,92 @@
+module expressions
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module test
+
+rewriter test String Ignore {
+    n := 1;
+    s := "String";
+    b := True;
+    d := String{};
+    l := String[];
+]]
+
+//plus, times, minus, divide, modulo all take numbers and return numbers
+// they all use the same validation routine, which will be tested by plus
+
+//number adding
+test plus    [[i := n + n;]] 0 errors
+
+//string adding
+test plus2.1 [[i := s + n;]] 0 error
+test plus2.2 [[i := n + s;]] 0 error
+test plus2.3 [[i := s + s;]] 0 errors
+
+test plus2.4 [[i := s + b;]] 1 error
+test plus2.5 [[i := n + d;]] 1 error
+test plus2.6 [[i := s + l;]] 1 errors
+
+test plus2.7 [[i := b + s;]] 1 error
+test plus2.8 [[i := d + n;]] 1 error
+test plus2.9 [[i := l + s;]] 1 errors
+
+test plus2.10 [[i := b + b;]] 2 error
+test plus2.11 [[i := d + d;]] 2 error
+test plus2.12 [[i := l + l;]] 2 errors
+
+test plus3.1 [[i := b + n;]] 1 error
+test plus3.2 [[i := n + b;]] 1 error
+test plus3.3 [[i := b + b;]] 2 errors
+
+test plus4.1 [[i := d + n;]] 1 error
+test plus4.2 [[i := n + d;]] 1 error
+test plus4.3 [[i := d + d;]] 2 errors
+
+test plus5.1 [[i := l + n;]] 1 error
+test plus5.2 [[i := n + l;]] 1 error
+test plus5.3 [[i := l + l;]] 2 errors
+
+test testop1 [[i := n * n;]] 0 errors
+test testop2 [[i := n * s;]] 1 errors 
+
+test testop3 [[i := n / n;]] 0 errors
+test testop4 [[i := n / s;]] 1 errors 
+
+test testop5 [[i := n % n;]] 0 errors
+test testop6 [[i := n % s;]] 1 errors 
+
+test testop7 [[i := n < n;]] 0 errors
+test testop8 [[i := n < s;]] 1 errors 
+
+test testop9 [[i := n > n;]] 0 errors
+test testop10 [[i := n > s;]] 1 errors 
+
+test testop11 [[i := n >= n;]] 0 errors
+test testop12 [[i := n >= s;]] 1 errors 
+
+test testop13 [[i := n <= n;]] 0 errors
+test testop14 [[i := n <= s;]] 1 errors
+
+
+//test equals, test for equal types. Only for numbers, strings, and booleans
+test eq1 [[i := n == n;]] 0 errors
+test eq2 [[i := n == s;]] 1 errors
+test eq3 [[i := s == s;]] 0 errors
+test eq4 [[i := b == s;]] 1 errors
+test eq5 [[i := b == b;]] 0 errors
+test eq6 [[i := l == l;]] 1 errors
+test eq7 [[i := l == l;]] 1 errors
+test eq7 [[i := d == d;]] 1 errors
+
+//test the return type:
+test plusres1 [[mylist := Number[1];]] 0 errors
+test plusres2 [[mylist := Number["nonumber"];]] 1 error
+test plusres3 [[mylist := Number[n + n];]] 0 errors
+test plusres4 [[mylist := Number[s + s];]] 1 errors
+
+setup Hadooplang program footer [[
+    return 1;
+    }
+]]

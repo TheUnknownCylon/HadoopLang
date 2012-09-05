@@ -1,0 +1,55 @@
+module loopscope
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module test2
+
+reducer test : String s : Iterator(Number) it {
+
+]]
+
+test scopeloop0 [[
+        z := 1;
+        z := 2;                                  // z already defined
+        write 1: 1;                              //  error for each
+]] 2 errors
+
+test scopeloop2 [[
+        for c in String[] {
+            c2 := 1;
+        }
+        write 1: c2;                             //c2 not defined in scope
+]] 1 error
+
+test scopeloop3 [[
+        z := 0;
+        for c in String[] {
+            z := 1;                               // z already defined
+        }
+        write 1: z;
+]] 1 error
+
+
+test scopeloop4 [[
+        z := 0;
+        for z in String[] {}                      //z already defined
+        write 1: z;
+]] 1 error
+
+test scopeloop5 [[
+        z := 0;
+        for z2 in String[] {
+            z = z + 1;
+        }
+        write 1: z;
+]] 0 errors
+
+test scopeloop6 [[
+        z := z + 1;                            // z not defined yet
+        write 1: z;
+]] 1 error
+
+setup Hadooplang program footer [[
+    }
+]]

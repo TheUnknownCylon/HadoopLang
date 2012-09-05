@@ -1,0 +1,58 @@
+
+module trans/codegen/modules/reducer
+
+imports
+  include/Hadooplang
+  trans/codegen/compiler
+  trans/types/typeof
+  
+  trans/codegen/types
+  trans/codegen/statements
+  trans/codegen/expressions
+  
+  trans/codegen/names
+  trans/index
+  
+rules
+    
+  to-java: r@Reducer(name', RedInner(keydef, valuedef, blockmr)) ->
+    (JavaFile("hdp.reducers", $[[name]], content), rewriters)
+    where
+        name := <name-of> r;
+        
+        MapReduceKey(_, keyname) := keydef;
+        ReduceIterator(_, iteratorname) := valuedef;
+    
+        keyname'    := $[[keyname]_];
+
+        keytype    := <type> <type-of> keydef;
+        ittype := <innertype> <type> <type-of> valuedef;
+
+        keytypehadoop   := <type'-to-hadoop-input> keytype;
+        ittypehadoop := <type'-to-hadoop-input> ittype;
+        ittypejava   := <type'-to-java> ittype;
+
+        TwoType(writetypekey, writetypevalue) := <innertype> <type> <type-of> r;
+        writetypekeyhadoop   := <type'-to-hadoop> writetypekey;
+        writetypevaluehadoop := <type'-to-hadoop> writetypevalue;
+
+
+	    (   <equal>(0, <length> <get-uses> keyname);
+	        convertkeytojava := []
+	    <+  convertkeytojava   := <type-hadoop-to-java> (TEMPVAR(keytype, keyname'), keyname)
+	    );
+	              
+        reducerbody := <to-java> blockmr;
+        rewriters := <collect-all(is-rewrite, conc)> r
+
+
+    with content:= $[
+    public class [name] extends Reducer<[keytypehadoop], [ittypehadoop], [writetypekeyhadoop], [writetypevaluehadoop]> {
+        public void reduce([keytypehadoop] [keyname'], Iterable<[ittypehadoop]> [iteratorname], Context context) {
+            [convertkeytojava]
+            
+            [reducerbody]        
+        }
+    }
+  ]
+  

@@ -1,0 +1,32 @@
+module trans/desugar/desugar
+
+imports
+    include/Hadooplang
+    trans/types/operators
+
+
+rules
+    
+    desugar: Plus(a, b)   -> OpExp(OpPlus(), a, b)
+    desugar: Min(a, b)    -> OpExp(OpMin(), a, b)
+    desugar: Times(a, b)  -> OpExp(OpTimes(), a, b)
+
+    desugar: Divide(a, b) -> OpExp(OpDivide(), a, b)
+    desugar: Modulo(a, b) -> OpExp(OpModulo(), a, b)
+
+    desugar: And(a, b)    -> OpExp(OpAnd(), a, b)
+    desugar: Or(a, b)     -> OpExp(OpOr(), a , b)
+    desugar: Equals(a, b) -> OpExp(OpEquals(), a, b)
+    
+    desugar: GreaterThan(a, b) -> OpExp(OpGreaterThan(), a, b)
+    desugar: SmallerThan(a, b) -> OpExp(OpSmallerThan(), a, b)
+    
+    desugar: EqGreaterThan(a, b) -> OpExp(OpEqGreaterThan(), a, b)
+    desugar: EqSmallerThan(a, b) -> OpExp(OpEqSmallerThan(), a, b)
+
+
+    desugar: ForloopSet(akey, set, awhere, block) -> ForloopSet(akey, set, block')
+        where block' := If(awhere, block, None())
+        
+    desugar: ForloopDict(akey, avalue, set, awhere, block) -> ForloopDict(akey, avalue, set, block')
+        where block' := If(awhere, block, None())

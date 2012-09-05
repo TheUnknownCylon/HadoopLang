@@ -1,0 +1,272 @@
+
+definition
+
+module grammar/Types
+exports
+  sorts WATER WATERTOKEN WATERTOKENSTART WATERTOKENSEPARATOR WATERTOKENSTAR
+
+  lexical syntax
+    ~[A-Za-z0-9\_]                 -> WATERTOKENSTART     {recover, avoid}
+    WATERTOKENSTART [A-Za-z0-9\_]* -> WATERTOKEN          
+    ~[A-Za-z0-9\_\ \t\12\r\n\*]    -> WATERTOKENSEPARATOR {recover, avoid}
+    "*"                            -> WATERTOKENSTAR      {recover, avoid}
+    WATERTOKEN                     -> WATER               
+    WATERTOKENSEPARATOR            -> WATER               
+    WATERTOKENSTAR                 -> WATER               
+                                   -> WATEREOF            
+
+  lexical restrictions
+    WATERTOKEN -/- [A-Za-z0-9\_]
+    WATERTOKENSTAR -/- [\/]
+
+  context-free syntax
+    WATER -> LAYOUT {cons("WATER")}
+
+  (
+
+  sorts WATEREOF
+
+  lexical restrictions
+    WATEREOF -/- ~[]
+
+  lexical syntax
+    %% Lexical insertion recovery rules                              
+    "/*"                                          -> INSERTSTART     {recover}
+    INSERTSTART ( ~[\*] | CommentChar )* WATEREOF -> LAYOUT          {cons("INSERTEND")}
+    "\""                                          -> INSERTOPENQUOTE {recover}
+    INSERTOPENQUOTE StringChar* "\n"              -> STRING          {cons("INSERTEND")}
+    INSERTOPENQUOTE StringChar* WATEREOF          -> STRING          {cons("INSERTEND")}
+                                                  -> "module"        {recover, cons("INSERTION")}
+                                                  -> "from"          {recover, cons("INSERTION")}
+                                                  -> "store"         {recover, cons("INSERTION")}
+                                                  -> ";"             {recover, cons("INSERTION")}
+                                                  -> ")"             {recover, cons("INSERTION")}
+                                                  -> ","             {recover, cons("INSERTION")}
+                                                  -> "input"         {recover, cons("INSERTION")}
+                                                  -> "map"           {recover, cons("INSERTION")}
+                                                  -> "reduce"        {recover, cons("INSERTION")}
+                                                  -> "}"             {recover, cons("INSERTION")}
+                                                  -> "mapper"        {recover, cons("INSERTION")}
+                                                  -> "reducer"       {recover, cons("INSERTION")}
+                                                  -> ":"             {recover, cons("INSERTION")}
+                                                  -> "rewriter"      {recover, cons("INSERTION")}
+                                                  -> "."             {recover, cons("INSERTION")}
+
+  syntax
+    %% Kernel syntax insertion recovery rules   
+
+  )
+
+  context-free syntax
+    "String"                -> Type {cons("TypeString")}
+    "Number"                -> Type {cons("TypeNum")}
+    "Boolean"               -> Type {cons("TypeBoolean")}
+    "Dict" "(" Type ")"     -> Type {cons("TypeDict")}
+    "List" "(" Type ")"     -> Type {cons("TypeList")}
+    "Iterator" "(" Type ")" -> Type {cons("TypeIterator")}
+
+module grammar/Expressions
+imports lexical/Identifiers grammar/Types
+
+exports
+  context-free syntax
+    NUM                    -> Exp        {cons("Num")}
+    STRING                 -> Exp        {cons("String")}
+    DatasetRef             -> Exp        
+    ID                     -> DatasetRef {cons("DatasetRef")}
+    DatasetRef "[" Exp "]" -> DictAccess {cons("DictAccess")}
+
+  context-free syntax
+    "True"  -> Exp {cons("True")}
+    "False" -> Exp {cons("False")}
+
+  context-free syntax
+    Type "{" {DictItem ","}* "}" -> Exp      {cons("Dict")}
+    Type "[" {Exp ","}* "]"      -> Exp      {cons("List")}
+    Exp ":" Exp                  -> DictItem {cons("DictItem")}
+
+  context-free syntax
+    "," {Exp ","}* -> Params {cons("Params")}
+                   -> Params {cons("Params")}
+
+  context-free syntax
+    DictAccess   -> Exp {cons("ExpDictaccess"), left, prefer}
+    "(" Exp ")"  -> Exp {cons("Brackets")}
+    Exp "+" Exp  -> Exp {cons("Plus"), left}
+    Exp "*" Exp  -> Exp {cons("Times"), left}
+    Exp "-" Exp  -> Exp {cons("Min"), left}
+    Exp "/" Exp  -> Exp {cons("Divide"), left}
+    Exp "%" Exp  -> Exp {cons("Modulo"), left}
+    Exp "&&" Exp -> Exp {cons("And"), left}
+    Exp "||" Exp -> Exp {cons("Or"), left}
+    Exp "==" Exp -> Exp {cons("Equals"), left}
+    Exp ">" Exp  -> Exp {cons("GreaterThan"), left}
+    Exp "<" Exp  -> Exp {cons("SmallerThan"), left}
+    Exp ">=" Exp -> Exp {cons("EqSmallerThan"), left}
+    Exp "<=" Exp -> Exp {cons("EqGreaterThan"), left}
+
+  context-free priorities
+    {left:
+      Exp "[" Exp "]" -> Exp
+    } >
+    {non-assoc:
+      Exp "%" Exp -> Exp
+    } >
+    {left:
+      Exp "/" Exp -> Exp
+      Exp "*" Exp -> Exp
+    } >
+    {left:
+      Exp "+" Exp -> Exp
+      Exp "-" Exp -> Exp
+    } >
+    {non-assoc:
+      Exp ">" Exp -> Exp
+      Exp "<" Exp -> Exp
+      Exp ">=" Exp -> Exp
+      Exp "<=" Exp -> Exp
+    } >
+    {left:
+      Exp "==" Exp -> Exp
+    } >
+    {left:
+      Exp "&&" Exp -> Exp
+    } >
+    {left:
+      Exp "||" Exp -> Exp
+    }
+
+module layout/layout
+imports lexical/Identifiers
+
+exports
+  lexical syntax
+    [\ \t\n\r] -> LAYOUT 
+
+  lexical syntax
+    [\*]                               -> CommentChar 
+    "/*" ( ~[\*] | CommentChar )* "*/" -> LAYOUT      
+    "//" ~[\n\r]* [\n\r] | EOF         -> LAYOUT      
+
+  lexical restrictions
+    CommentChar -/- [\/]
+    BackSlashChar -/- [\"]
+
+  context-free restrictions
+    LAYOUT? -/- [\ \t\n\r]
+    LAYOUT? -/- [\/] . [\/]
+    LAYOUT? -/- [\/] . [\*]
+
+module lexical/Keywords
+exports
+  lexical syntax
+    "import"    -> KeyWord 
+    "module"    -> KeyWord 
+    "store"     -> KeyWord 
+    "from"      -> KeyWord 
+    "with"      -> KeyWord 
+    "where"     -> KeyWord 
+    "write"     -> KeyWord 
+    "List"      -> KeyWord 
+    "Dict"      -> KeyWord 
+    "String"    -> KeyWord 
+    "Number"    -> KeyWord 
+    "Boolean"   -> KeyWord 
+    "map"       -> KeyWord 
+    "reduce"    -> KeyWord 
+    "for"       -> KeyWord 
+    "store"     -> KeyWord 
+    "in"        -> KeyWord 
+    "to"        -> KeyWord 
+    "nowarning" -> KeyWord 
+    "True"      -> KeyWord 
+    "False"     -> KeyWord 
+    "mapper"    -> KeyWord 
+    "reducer"   -> KeyWord 
+    "rewriter"  -> KeyWord 
+    "_"         -> KeyWord 
+
+module lexical/Identifiers
+imports lexical/Keywords
+
+exports
+  lexical syntax
+    [a-zA-Z] [a-zA-Z0-9]* -> ID            
+    "-"? [0-9]+           -> NUM           
+    [a-zA-Z0-9\_]*        -> JAVACLASS     
+                          -> EOF           
+    "\"" StringChar* "\"" -> STRING        
+    ~[\"\n]               -> StringChar    
+    "\\\""                -> StringChar    
+    BackSlashChar         -> StringChar    
+    "\\"                  -> BackSlashChar 
+
+  lexical restrictions
+    NUM -/- [0-9]
+    ID -/- [a-zA-Z0-9\_]
+    EOF -/- ~[]
+
+  lexical syntax
+    KeyWord -> ID {reject}
+
+module Hadooplang
+imports lexical/Identifiers layout/layout grammar/Expressions grammar/Types
+
+exports
+  context-free start-symbols
+    Start
+
+  context-free syntax
+    "module" ID Import* RootStatement*       -> Start              {cons("Module"), scope([[]])}
+    ImportPart ";"                           -> Import             {cons("Import")}
+    "from" ID "import" "mapper" MapperRef    -> ImportPart         {cons("OneImportMapper")}
+    "from" ID "import" "reducer" ReducerRef  -> ImportPart         {cons("OneImportReducer")}
+    "from" ID "import" "rewriter" RewriteRef -> ImportPart         {cons("OneImportRewriter")}
+    ID                                       -> ReducerRef         {cons("ReducerRef")}
+    ID                                       -> RewriteRef         {cons("RewriteRef")}
+    ID                                       -> MapperRef          {cons("MapperRef")}
+    "rewrite" Exp "with" RewriteRef Params   -> Exp                {cons("Rewrite"), prefer}
+    ID ":=" MapReduceChain ";"               -> RootStatement      {cons("DatasetDef")}
+    "store" ID ";"                           -> RootStatement      {cons("Store")}
+    Rewriter                                 -> RootStatement      
+    Mapper                                   -> RootStatement      
+    Reducer                                  -> RootStatement      
+    Statement                                -> MapReduceStatement 
+    "write" Exp ":" Exp ";"                  -> Statement          {cons("write")}
+    MRInput "->" MRMapper "->" MRReducer     -> MapReduceChain     {cons("MapReduceChain")}
+    "input" ID "(" {Exp ","}* ")"            -> MRInput            {cons("MRInputMethod")}
+    "input" ID                               -> MRInput            {cons("MRInputSet")}
+    "map" "with" MapperRef                   -> MRMapper           {cons("MRMapper")}
+    "reduce" "with" ReducerRef               -> MRReducer          {cons("MRReducer")}
+    "{" Statement* "}"                       -> Block              {cons("Block"), scope([[]])}
+    "{" MapReduceStatement* "}"              -> BlockMR            {cons("BlockMR"), scope([[]])}
+    "{" Statement* "return" Exp ";" "}"      -> BlockReturn        {cons("BlockReturn"), scope([[]])}
+
+  context-free syntax
+    Type ID                                                                                 -> RewriterParameter {cons("RewriterParameter")}
+    Type ID                                                                                 -> Parameter         {cons("Parameter")}
+    "," Type ID                                                                             -> CommaParameter    {cons("Parameter")}
+    Type ID                                                                                 -> ReduceIterator    {cons("ReduceIterator")}
+    "mapper" ID MapInner                                                                    -> Mapper            {cons("Mapper"), scope([[]])}
+    "reducer" ID RedInner                                                                   -> Reducer           {cons("Reducer"), scope([[]])}
+    ":" MRKey ":" Parameter BlockMR                                                         -> MapInner          {cons("MapInner"), scope([[]])}
+    ":" MRKey ":" ReduceIterator BlockMR                                                    -> RedInner          {cons("RedInner"), scope([[]])}
+    "rewriter" ID RewriterParameter CommaParameter* BlockReturn                             -> Rewriter          {cons("Rewriter"), scope([[]])}
+    "rewriter" ID RewriterParameter CommaParameter* "alias" {JAVACLASS "."}* "returns" Type -> Rewriter          {cons("RewriterAlias"), scope([[]])}
+    Type ID                                                                                 -> MRKey             {cons("MapReduceKey")}
+
+  context-free syntax
+    ID ":=" Exp ";"                                               -> Statement     {cons("DatasetDefStatement")}
+    DatasetRef "=" Exp ";"                                        -> Statement     {cons("DatasetSetVar")}
+    DatasetRef "[" "]" "=" Exp ";"                                -> Statement     {cons("ListAddItem")}
+    DictAccess "=" Exp ";"                                        -> Statement     {cons("ListDictSetItem")}
+    If                                                            -> Statement     
+    LoopStatement                                                 -> Statement     {cons("loop"), scope([[]])}
+    Block                                                         -> LoopBlock     {cons("loopblock"), scope([[]])}
+    "for" ID "in" Exp LoopBlock                                   -> LoopStatement {cons("ForloopSet"), scope([[]])}
+    "for" ForKeyDef ":" ID "in" Exp LoopBlock                     -> LoopStatement {cons("ForloopDict"), scope([[]])}
+    "for" ID "in" Exp "where" "(" Exp ")" LoopBlock               -> LoopStatement {cons("ForloopSet"), scope([[]])}
+    "for" ForKeyDef ":" ID "in" Exp "where" "(" Exp ")" LoopBlock -> LoopStatement {cons("ForloopDict"), scope([[]])}
+    ID                                                            -> ForKeyDef     {cons("ForKeyDef")}
+    "if" "(" Exp ")" Block IfElse?                                -> If            {cons("If")}
+    "else" Block                                                  -> IfElse        {cons("IfElse")}

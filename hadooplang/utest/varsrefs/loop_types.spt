@@ -1,0 +1,53 @@
+module typecheks
+
+language Hadooplang
+
+setup Hadooplang program header [[
+	module test
+	
+	rewriter test String ignore {
+]]
+/**
+ * Testing the type of elements to loop over. SHould be list or set.
+ */
+test forsetparam1   [[ for word in String[] { } ]]        0 errors
+test forsetparam2   [[ for word in Number[] { } ]]        0 errors
+test forsetparam3   [[ for word in Dict(String)[] { } ]]  0 errors
+test forsetparam4   [[ for word in List(String)[] { } ]]  0 errors
+
+test forsetparam1f  [[ for word in String{} { } ]]        1 error
+test forsetparam2f  [[ for word in Number{} { } ]]        1 error
+test forsetparam3f  [[ for word in Dict(String){} { } ]]  1 error
+test forsetparam4f  [[ for word in List(String){} { } ]]  1 error
+
+test fordictparam1  [[ for key:word in String{} { } ]]       0 errors  
+test fordictparam2  [[ for key:word in Number{} { } ]]       0 errors 
+test fordictparam3  [[ for key:word in Dict(String){} { } ]] 0 errors
+test fordictparam4  [[ for key:word in List(String){} { } ]] 0 errors
+
+test fordictparam1f [[ for key:word in String[] { } ]]       1 error
+test fordictparam2f [[ for key:word in Number[] { } ]]       1 error
+test fordictparam3f [[ for key:word in Dict(String)[] { } ]] 1 error
+test fordictparam4f [[ for key:word in List(String)[] { } ]] 1 error
+
+
+//Test that key is always of type String
+test fordictkey1 [[ for key:word in String{} { x := String {key:key}; } ]] 0 errors
+test fordictkey1 [[ for key:word in String{} { x := Number{key:1}; }   ]]  0 errors
+
+//Test that the iterated value is of the correct type
+test forsetvalue1   [[ for word in String[] { x := String{word:word}; } ]] 0 errors
+test forsetvalue2   [[ for word in String[] { x := Number{word:1}; }   ]]  0 errors
+test forsetvalue3   [[ for word in String[] { x := Number{"1":word}; } ]]  1 error
+
+test forsetvalue1   [[ for word in Number[] { x := String{word:word}; } ]] 2 errors
+test forsetvalue2   [[ for word in Number[] { x := Number{word:1}; }   ]]  1 error
+test forsetvalue3   [[ for word in Number[] { x := Number{"1":word}; } ]]  0 errors
+
+//can test more: dicts, etc. but these passing tests indicate that the values are correct
+// assuming that types are checked correctly, which is done in typechecks.spt
+
+setup Hadooplang program header [[
+        return 1;
+    }
+]]

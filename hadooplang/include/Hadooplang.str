@@ -1,0 +1,102 @@
+module Hadooplang
+
+signature
+  constructors
+    IfElse              : Block -> IfElse
+    If                  : Exp * Block * Option(IfElse) -> If
+    ForKeyDef           : ID -> ForKeyDef
+    ForloopDict         : ForKeyDef * ID * Exp * Exp * LoopBlock -> LoopStatement
+    ForloopSet          : ID * Exp * Exp * LoopBlock -> LoopStatement
+    ForloopDict         : ForKeyDef * ID * Exp * LoopBlock -> LoopStatement
+    ForloopSet          : ID * Exp * LoopBlock -> LoopStatement
+    loopblock           : Block -> LoopBlock
+    MapReduceKey        : Type * ID -> MRKey
+    RewriterAlias       : ID * RewriterParameter * List(CommaParameter) * List(JAVACLASS) * Type -> Rewriter
+    Rewriter            : ID * RewriterParameter * List(CommaParameter) * BlockReturn -> Rewriter
+    RedInner            : MRKey * ReduceIterator * BlockMR -> RedInner
+    MapInner            : MRKey * Parameter * BlockMR -> MapInner
+    Reducer             : ID * RedInner -> Reducer
+    Mapper              : ID * MapInner -> Mapper
+    ReduceIterator      : Type * ID -> ReduceIterator
+    Parameter           : Type * ID -> CommaParameter
+    Parameter           : Type * ID -> Parameter
+    RewriterParameter   : Type * ID -> RewriterParameter
+    BlockReturn         : List(Statement) * Exp -> BlockReturn
+    BlockMR             : List(MapReduceStatement) -> BlockMR
+    Block               : List(Statement) -> Block
+    MRReducer           : ReducerRef -> MRReducer
+    MRMapper            : MapperRef -> MRMapper
+    MRInputSet          : ID -> MRInput
+    MRInputMethod       : ID * List(Exp) -> MRInput
+    MapReduceChain      : MRInput * MRMapper * MRReducer -> MapReduceChain
+    loop                : LoopStatement -> Statement
+                        : If -> Statement
+    ListDictSetItem     : DictAccess * Exp -> Statement
+    ListAddItem         : DatasetRef * Exp -> Statement
+    DatasetSetVar       : DatasetRef * Exp -> Statement
+    DatasetDefStatement : ID * Exp -> Statement
+    write               : Exp * Exp -> Statement
+                        : Statement -> MapReduceStatement
+                        : Reducer -> RootStatement
+                        : Mapper -> RootStatement
+                        : Rewriter -> RootStatement
+    Store               : ID -> RootStatement
+    DatasetDef          : ID * MapReduceChain -> RootStatement
+    MapperRef           : ID -> MapperRef
+    RewriteRef          : ID -> RewriteRef
+    ReducerRef          : ID -> ReducerRef
+    OneImportRewriter   : ID * RewriteRef -> ImportPart
+    OneImportReducer    : ID * ReducerRef -> ImportPart
+    OneImportMapper     : ID * MapperRef -> ImportPart
+    Import              : ImportPart -> Import
+    Module              : ID * List(Import) * List(RootStatement) -> Start
+    Params              : Params
+    Params              : List(Exp) -> Params
+    DictItem            : Exp * Exp -> DictItem
+    DictAccess          : DatasetRef * Exp -> DictAccess
+    DatasetRef          : ID -> DatasetRef
+    Rewrite             : Exp * RewriteRef * Params -> Exp
+    EqGreaterThan       : Exp * Exp -> Exp
+    EqSmallerThan       : Exp * Exp -> Exp
+    SmallerThan         : Exp * Exp -> Exp
+    GreaterThan         : Exp * Exp -> Exp
+    Equals              : Exp * Exp -> Exp
+    Or                  : Exp * Exp -> Exp
+    And                 : Exp * Exp -> Exp
+    Modulo              : Exp * Exp -> Exp
+    Divide              : Exp * Exp -> Exp
+    Min                 : Exp * Exp -> Exp
+    Times               : Exp * Exp -> Exp
+    Plus                : Exp * Exp -> Exp
+    Brackets            : Exp -> Exp
+    ExpDictaccess       : DictAccess -> Exp
+    List                : Type * List(Exp) -> Exp
+    Dict                : Type * List(DictItem) -> Exp
+    False               : Exp
+    True                : Exp
+                        : DatasetRef -> Exp
+    String              : STRING -> Exp
+    Num                 : NUM -> Exp
+    TypeIterator        : Type -> Type
+    TypeList            : Type -> Type
+    TypeDict            : Type -> Type
+    TypeBoolean         : Type
+    TypeNum             : Type
+    TypeString          : Type
+                        : String -> STRING
+                        : String -> JAVACLASS
+                        : String -> NUM
+                        : String -> ID
+
+
+signature
+  constructors
+    Some : a -> Option(a)
+    None : Option(a)
+
+
+signature
+  constructors
+    Cons : a * List(a) -> List(a)
+    Nil  : List(a)
+    Conc : List(a) * List(a) -> List(a)

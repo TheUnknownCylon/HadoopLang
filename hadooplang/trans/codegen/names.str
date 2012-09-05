@@ -1,0 +1,19 @@
+module trans/codegen/names
+
+imports
+  libstratego-lib
+  include/Hadooplang
+  lib/editor-common.generated
+  lib/analysis-auto.generated
+  lib/index-library.generated
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+
+rules
+    name-of: Mapper(name, _, _, _)-> $[Mapper[name]]
+    name-of: Reducer(name, _, _, _)-> $[Reducer[name]]
+    name-of: Rewriter(name, _, _, _)-> $[Rewriter[name]]
+    
+rules
+    gen-new-name : _ -> <gen-new-name(|$[random_])>
+    gen-new-name(|p) : _ -> $[[p]_r_[<abs> <next-random>]]

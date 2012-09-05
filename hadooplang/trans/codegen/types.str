@@ -1,0 +1,259 @@
+module trans/codegen/types
+
+imports
+  include/Hadooplang
+    
+  trans/types/typeof
+  trans/types/checks
+  
+  trans/codegen/statements
+  trans/codegen/expressions
+  trans/codegen/vars
+
+  trans/codegen/names
+
+signature constructors
+    TEMPVAR: type * value -> TEMPVAR
+
+rules
+  type-of: TEMPVAR(t, _) -> Type(t, 0)
+  to-java: TEMPVAR(_, v) -> v
+  
+
+rules
+  type-to-java: Type(t, _) -> <type'-to-java> t
+  type-to-hadoop: x@Type(t, _) -> <type'-to-hadoop> t
+  type-to-hadoop: x -> <fail>
+    with <debug(!"COMPILERBUG: type-to-hadoop failed: ")> <id>
+
+  type'-to-hadoop-input: Num() -> $[Writable]
+  type'-to-hadoop-input: x -> <type'-to-hadoop> x 
+  
+  type'-to-hadoop-nongeneric: List(t) -> $[ArrayListWritable]
+  type'-to-hadoop-nongeneric: x -> <type'-to-hadoop> x
+  
+  type'-to-hadoop: String() -> $[Text]
+  type'-to-hadoop: Num()    -> $[DoubleWritable]   //we can expect multiple types from here, long, number or double writables
+  type'-to-hadoop: Bool()   -> $[BooleanWritable]
+  type'-to-hadoop: List(t)  -> $[ArrayListWritable<[<type'-to-hadoop> t]>]
+  type'-to-hadoop: Dict(t)  -> $[MapWritableHdp]
+  type'-to-hadoop: Iterator(t)  -> $[Iterable<Writable>]
+  
+  type'-to-java:   String() -> $[String]
+  type'-to-java:   Num()    -> $[Double]
+  type'-to-java:   Bool()   -> $[Boolean]
+  type'-to-java:   List(t)  -> $[List<[<type'-to-java> t]>]
+  type'-to-java:   Dict(t)  -> $[HashMap<String, [<type'-to-java> t]>]
+  type'-to-java:   Iterator(t) ->$[Iterable<[<type'-to-java> t]>]
+
+
+rules 
+  
+  type-hadoop-to-java: (ref, varname) -> javacode
+    where <typecheck(|String())> ref
+    where javacode := <to-java> DatasetDefStatement(varname, TEMPVAR(String(), $[[<to-java> ref].toString()]))
+
+  type-hadoop-to-java: (ref, varname) -> javacode
+    where <typecheck(|Num())> ref
+    where
+        tempvar := <gen-new-name>;
+        javacode := $[
+	        [<type'-to-java> <type-type-of> ref] [varname] = null;
+	        Writable [tempvar] = [<to-java> ref]; 
+	        try {[varname] = ((DoubleWritable)[tempvar]).get();}catch(Exception [<gen-new-name(|"e")>]) {
+	          try {[varname] = (double) ((LongWritable)[tempvar]).get();}catch(Exception [<gen-new-name(|"e")>]) {
+	            try {[varname] = (double) ((IntWritable)[tempvar]).get();}catch(Exception [<gen-new-name(|"e")>]) {
+	                throw new RuntimeException("Input value is not a number");
+	            }
+	          }
+	        }
+        ] 
+  
+  type-hadoop-to-java: (ref, varname) -> javacode
+    where <typecheck(|Bool())> ref
+    where javacode := $[[<type'-to-java> <type-type-of> ref] [varname] = [<to-java> ref].get();] 
+  
+  
+  
+  type-hadoop-to-java: (ref, varname) -> javacode
+    where <is-type-list> <type> <type-of> ref
+    where
+        arraylisttype  := <type'-to-java> <type-type-of> ref;
+        innertype      := <innertype> <type-type-of> ref;
+        innertypehdp   := <type'-to-hadoop> innertype;
+        innertypejava  := <type'-to-java> innertype;
+        itname         := <gen-new-name>;
+        awname         := <gen-new-name>;
+        for_valuename  := <gen-new-name>;
+        valuefromarray := $[(([innertypehdp])[awname].get([itname]))];
+        innerjava      := <type-hadoop-to-java> (TEMPVAR(innertype, valuefromarray), for_valuename)
+        
+    where
+        javacode := $[
+            ArrayListWritable<[innertypehdp]> [awname] = [<to-java> ref];
+            ArrayList<[innertypejava]> [varname] = new ArrayList<[innertypejava]>();
+            for(int [itname]=0; [itname]<[awname].size(); [itname]++) {
+                [innerjava]
+                [varname].add([for_valuename]);
+            }
+        ]
+        
+  
+  type-hadoop-to-java: (ref, varname) -> javacode
+    where <is-type-dict> <type> <type-of> ref
+    where
+        hashmaptype   := <type'-to-java> <type-type-of> ref;
+        for_keyname   := <gen-new-name>;
+        for_keyname'  := <gen-new-name>;
+        mapname       := <gen-new-name>;
+        for_valuename := <gen-new-name>;
+        innertype     := <innertype> <type-type-of> ref;
+        innertypehdp  := <type'-to-hadoop> innertype;
+        valuefrommap  := $[(([innertypehdp])[mapname].get([for_keyname]))];
+        innerjava     := <type-hadoop-to-java> (TEMPVAR(innertype, valuefrommap), for_valuename)
+        
+
+    where
+        javacode := $[
+            MapWritableHdp [mapname] = [<to-java> ref];
+            [hashmaptype] [varname] = new [hashmaptype]();
+            for(Writable [for_keyname] : [mapname].keySet()) {
+                String [for_keyname'] = ((Text)[for_keyname]).toString();
+                [innerjava]
+                [varname].put([for_keyname'], [for_valuename]);
+            }
+        ]
+  
+
+rules
+  
+  type-java-to-hadoop: ref -> (newname, javacode)
+    where <typecheck(|String())> ref
+    where
+        newname := <gen-new-name>;
+        javacode := $[Text [newname] = new Text([<to-java> ref]);]
+        
+        
+  type-java-to-hadoop: ref -> (newname, javacode)
+    where <typecheck(|Num())> ref
+    where
+        newname := <gen-new-name>;
+        javacode := $[DoubleWritable [newname] = new DoubleWritable([<to-java> ref]);]
+        
+        
+  type-java-to-hadoop: ref -> (newname, javacode)
+    where <typecheck(|Bool())> ref
+    where
+        newname := <gen-new-name>;
+        javacode := $[BooleanWritable [newname] = new BooleanWritable([<to-java> ref]);]
+
+
+  type-java-to-hadoop: ref -> (newname, javacode)
+    where
+        (  <is-type-list> <type-type-of> ref 
+        <+ <is-type-iterator> <type-type-of> ref )
+    where
+        newname := <gen-new-name>;
+        
+        innertypehadoop := <type'-to-hadoop> <innertype> <type-type-of> ref; 
+        
+        arraylistname := <gen-new-name(|$[arraylistname])>;
+        
+        mapitername := <gen-new-name(|$[mapwritable_iter])>;
+        mapiterkey := <gen-new-name(|$[mapwritable_key])>;
+        mapitertype := <type'-to-java> <type-type-of> ref;
+        temparray := <gen-new-name(|$[temparray])>;
+        
+        innertype := <innertype> <type> <type-of> ref;
+        innername := <gen-new-name(|$[iter])>;
+        
+        itname := <gen-new-name>;
+
+        (innertohadoop_var, innertohadoop_java) :=
+           <type-java-to-hadoop> TEMPVAR(innertype, mapiterkey)
+        
+    where
+        javacode := $[
+            [mapitertype] [mapitername] = [<to-java> ref];
+            ArrayList<Writable> [arraylistname] = new ArrayList<Writable>();
+            for([<type'-to-java> innertype] [mapiterkey] : [mapitername]) {
+                [innertohadoop_java]
+                [arraylistname].add([innertohadoop_var]);
+            }
+            ArrayListWritable<[innertypehadoop]> [newname] = new ArrayListWritable<[innertypehadoop]>();
+            Writable["[]"] [temparray] = new Writable["["] [arraylistname].size() ["]"];
+            [arraylistname].toArray([temparray]);
+            for(int [itname] = 0; [itname]<[temparray].length; [itname]++) {
+                [newname].add(([innertypehadoop])[temparray]["["][itname]["]"]);
+            }
+        ]
+
+
+//   type-java-to-hadoop: ref -> (newname, javacode)
+//     where
+//         (  <is-type-list> <type-type-of> ref 
+//         <+ <is-type-iterator> <type-type-of> ref )
+//     where
+//         newname := <gen-new-name>;
+//         
+//         innertypehadoop := <type'-to-hadoop> <innertype> <type-type-of> ref; 
+//         
+//         arraylistname := <gen-new-name(|$[arraylistname])>;
+//         
+//         mapitername := <gen-new-name(|$[mapwritable_iter])>;
+//         mapiterkey := <gen-new-name(|$[mapwritable_key])>;
+//         mapitertype := <type'-to-java> <type-type-of> ref;
+//         temparray := <gen-new-name(|$[temparray])>;
+//         
+//         innertype := <innertype> <type> <type-of> ref;
+//         innername := <gen-new-name(|$[iter])>;
+// 
+//         (innertohadoop_var, innertohadoop_java) :=
+//            <type-java-to-hadoop> TEMPVAR(innertype, mapiterkey)
+//         
+//     where
+//         javacode := $[
+//             [mapitertype] [mapitername] = [<to-java> ref];
+//             ArrayList<Writable> [arraylistname] = new ArrayList<Writable>();
+//             for([<type'-to-java> innertype] [mapiterkey] : [mapitername]) {
+//                 [innertohadoop_java]
+//                 [arraylistname].add([innertohadoop_var]);
+//             }
+//             ArrayWritableHDP [newname] = new ArrayWritableHDP([innertypehadoop].class);
+//             Writable["[]"] [temparray] = new Writable["["] [arraylistname].size() ["]"];
+//             [arraylistname].toArray([temparray]);
+//             [newname].set([temparray]);
+//         ]
+        
+        
+  type-java-to-hadoop: ref -> (newname, javacode)
+    where <is-type-dict> <type> <type-of> ref
+    where
+        newname := <gen-new-name>;
+        
+        mapitername := <gen-new-name(|$[mapwritable_iter])>;
+        mapiterkey := <gen-new-name(|$[mapwritable_key])>;
+        mapitertype := <type'-to-java> <type> <type-of> ref;
+        
+        innertype := <innertype> <type> <type-of> ref;
+        innername := <gen-new-name(|$[iter])>;
+
+        (innertohadoop_var, innertohadoop_java) :=
+           <type-java-to-hadoop> TEMPVAR(innertype, innername)
+        
+    where
+        javacode := $[
+            MapWritableHdp [newname] = new MapWritableHdp();
+            [mapitertype] [mapitername] = [<to-java> ref];
+
+            for(String [mapiterkey] : [mapitername].keySet()) {
+                [<type'-to-java> innertype] [innername] = [mapitername].get([mapiterkey]);
+                [innertohadoop_java]
+                [newname].put(new Text([mapiterkey]), [innertohadoop_var]);
+            }
+        ]
+        
+
+
+        
+        

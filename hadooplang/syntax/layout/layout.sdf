@@ -1,0 +1,25 @@
+module layout/layout
+
+imports lexical/Identifiers
+
+exports
+  lexical syntax
+    [\ \t\n\r] -> LAYOUT
+    
+  lexical syntax
+    [\*]                             -> CommentChar
+    "/*" (~[\*] | CommentChar)* "*/" -> LAYOUT
+    "//" ~[\n\r]* ([\n\r] | EOF)     -> LAYOUT
+    
+  lexical restrictions
+    %% Ensure greedy matching for lexicals
+    CommentChar   -/- [\/]
+
+    %% Backslash chars in strings may not be followed by "   
+    BackSlashChar -/- [\"]
+
+  %% Ensure greedy matching for comments
+  context-free restrictions
+    LAYOUT? -/- [\ \t\n\r]
+    LAYOUT? -/- [\/].[\/]
+    LAYOUT? -/- [\/].[\*]

@@ -1,0 +1,27 @@
+module trans/hover
+
+
+imports
+	include/Hadooplang
+	
+    trans/index
+    trans/types/typeof
+    trans/types/operators
+    
+rules 
+    hover-text: uri -> $[Type: [typename].]
+        where
+            //<debug(!"Trying to get the type of: ")> uri;
+            typename := <type-name> <type-of> uri
+
+
+
+                    	
+    
+    // hover-text: uri -> $[LALALALA]
+    //     where
+    //         <debug(!"... hover uri:")> uri;
+    //         <debug(!"    node: ")> <get-node> uri
+    //         
+    // hover-text: _ -> $[faal]
+    //     where <debug(!" :( ")> <id>

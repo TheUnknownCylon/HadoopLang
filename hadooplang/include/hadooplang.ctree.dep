@@ -1,0 +1,20 @@
+/home/remco/documents/workspace-spoofax/hadooplang/include/hadooplang.ctree: \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/hover.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/lib/lists.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/types/checks.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/check.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/index.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/lib/string.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/inputs/inputs.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/types/typeof.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/types/operators.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/desugar/desugar.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/lib/compilation-library.generated.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/lib/analysis-library-internal.generated.str \
+	 \
+	/home/remco/documents/workspace-spoofax/hadooplang/lib/analysis-library.generated.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/lib/index-library.generated.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/lib/analysis-auto.generated.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/lib/editor-common.generated.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/include/Hadooplang.str \
+	/home/remco/documents/workspace-spoofax/hadooplang/trans/hadooplang.str

@@ -1,0 +1,65 @@
+  
+module trans/codegen/modules/mapper
+
+imports
+  include/Hadooplang
+  trans/codegen/compiler
+  trans/types/typeof
+
+  trans/codegen/types
+  trans/codegen/statements
+  trans/codegen/expressions
+  
+  trans/codegen/names
+  trans/index
+
+rules
+
+  to-java: m@Mapper(name', MapInner(keydef, valuedef, blockmr)) ->
+    (JavaFile("hdp.mappers", $[[name]], content), rewriters)
+    
+    where
+      name := <name-of> m;
+      MapReduceKey(_, keyname) := keydef;
+      Parameter(_, valuename)  := valuedef;
+
+      keyname'    := $[[keyname]_];
+      valuename'  := $[[valuename]_];
+
+      keytype    := <type> <type-of> keydef;
+      valuetype  := <type> <type-of> valuedef;
+
+      keytypehadoop   := <type'-to-hadoop-input> keytype;
+      valuetypehadoop := <type'-to-hadoop-input> valuetype;
+
+      TwoType(writetypekey, writetypevalue) := <innertype> <type> <type-of> m;
+      writetypekeyhadoop   := <type'-to-hadoop> writetypekey;
+      writetypevaluehadoop := <type'-to-hadoop> writetypevalue;
+
+      mapperbody := <to-java> blockmr;
+
+      (   <equal>(0, <length> <get-uses> keyname);
+          convertkeytojava := []
+      <+  convertkeytojava   := <type-hadoop-to-java> (TEMPVAR(keytype, keyname'), keyname)
+      );
+
+      (   <equal>(0, <length> <get-uses> valuename);
+          convertvaluetojava := []
+      <+  convertvaluetojava := <type-hadoop-to-java> (TEMPVAR(valuetype, valuename'), valuename)
+      );
+      
+      rewriters := <nub> <collect-all(is-rewrite, conc)> m
+
+    with content := $[
+      public class [name] extends Mapper<[keytypehadoop], [valuetypehadoop], [writetypekeyhadoop], [writetypevaluehadoop]> {
+          public void map([keytypehadoop] [keyname'], [valuetypehadoop] [valuename'], Context context) {
+              /* Convert input types */
+              [convertkeytojava]
+              [convertvaluetojava]
+              
+              /* Execute main body */
+              [mapperbody]
+          }
+      }
+    ] 
+    

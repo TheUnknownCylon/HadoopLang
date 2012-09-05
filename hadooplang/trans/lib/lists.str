@@ -1,0 +1,28 @@
+module trans/lib/lists
+
+rules
+    //recursively checks wheter all elements in a list are equal
+    // fails if this is not the case.
+    list-eq: [x1|xs] -> [x1|xs]
+        where
+            [x2|xss] := xs;
+            <equal>(x1, x2);
+            <list-eq> xs
+            
+    list-eq: [x1] -> [x1]
+    
+    
+rules
+    //Adds a comma between all list values.
+    // Example:  ["1", "2", "3"] whill become: ["1", ",", "2", ",", "3"]
+    add-in-between(|op): list -> listwithcommas
+        where listwithcommas := <add-in-between'(|op)> (list, [])
+    
+    add-in-between'(|op): ([], resultlist) -> resultlist
+    
+    add-in-between'(|op): ([x], resultlist) -> <flatten-list> [resultlist | [x]]
+    
+    add-in-between'(|op): ([x|xs], resultlist) -> newresultlist
+        where
+            resultlist' := <flatten-list> [resultlist | [x, op]];
+            newresultlist := <add-in-between'(|op)>(xs, resultlist')

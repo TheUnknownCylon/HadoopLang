@@ -1,0 +1,25 @@
+module realtest
+
+mapper mapA : Number docid : String text {
+    
+    if( 2 == 1) {
+        if(False) {
+            
+        }
+    }
+    
+    for x in String[] {
+        for k : v in String{} {
+            
+        }
+    }
+    
+    write docid : text;
+}  
+
+reducer mapA : Number docid : Iterator(String) text2 {
+    write docid: "1";
+}
+
+x1 := input lines("A") -> map with mapA -> reduce with mapA;
+store x1;

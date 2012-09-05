@@ -1,0 +1,100 @@
+module trans/check
+
+imports
+  libstratego-lib
+  include/Hadooplang
+  lib/editor-common.generated
+  lib/analysis-auto.generated
+  lib/index-library.generated
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+
+  trans/index
+  trans/types/typeof
+
+rules // Resolving
+  
+  constraint-error:
+    x{[Unresolved(t) | _]} -> (x, $[Unable to resolve: [x].])
+
+
+/* **************
+ * Give an error when an name/kind combination
+ * is defined multiple times.
+ */
+rules // Duplicates
+  is-unique-namespace = ?Import()
+  is-unique-namespace = ?Rewriter()
+  is-unique-namespace = ?Mapper()
+  is-unique-namespace = ?Rewriter()
+  is-unique-namespace = ?Dataset()
+  is-unique-namespace = ?Datavar()
+      
+  constraint-error: definition -> <is-duplicate> definition 
+    
+  is-duplicate: definition -> (definition, $[Duplicate definition: [key].])
+    where
+      key{[ns|_]} := <nam-get-definition-key> definition;
+      <is-unique-namespace> ns;
+      definitions := <index-lookup-all> key;
+      <gt> (<length> definitions, 1)
+
+/* ****************
+ * Give unused var errors for unused datasets and datavars
+ */
+rules
+  is-usable-namespace = ?Dataset()
+  is-usable-namespace = ?Datavar()
+  
+  constraint-warning:
+    def' -> (def', $[Unused definition])
+    where
+      key{[ns|path]} := <nam-get-definition-key> def';
+      <is-usable-namespace> ns;
+      [] := <index-get-uses-all> Def([ns|path])
+      
+      
+/* ********************
+ * Give an error when there is a reference to a variable,
+ * but the var has not been defined (yet).
+ */  
+rules          
+  as_not_defined_error: x -> (x,  $[Use, but is not defined (yet).])
+
+  is-ordered-namespace = ?Dataset()
+  is-ordered-namespace = ?Datavar()
+
+  constraint-error: x{_} -> <as_not_defined_error> x 
+    where
+      not(<index-is-definition> x);
+      namespace := <index-uri-namespace> x;
+      <is-ordered-namespace> namespace;
+
+      def' := <index-lookup> x;
+      
+      //<index-lookup> does work only for one Def() in case
+      //  when multiple are defined, some fail.
+      // This not() will explicit check for definitions.
+      //   Otherwise an unwanted error is also raised for the non-first defs 
+      not(<is-duplicate> <get-node> x);
+
+      <gt> (<Fst> <origin-offset> def', <Fst> <origin-offset> x);
+      currentFile := <origin-file> x;
+      [otherFile|_] := <index-get-files-of> def';
+      <eq> (currentFile, <Fst> otherFile)
+      
+/* *************
+ * With the defined errors above, a special case of unused is not detected,
+ * This additional rule gives errors for this special case:
+ *  p := p;
+ */
+ rules
+     is-matching-datsetref(|x): d@DatasetRef(n) -> d
+        where <equal>(x, n)
+
+     constraint-error: d@DatasetDefStatement(name, expr) -> errors
+        where
+            matches := <collect-all(is-matching-datsetref(|name), conc)> expr;
+            <gt> (<length> matches, 0);
+            errors := <map(as_not_defined_error)> matches
+        

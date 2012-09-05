@@ -1,0 +1,24 @@
+
+module messyrwlib
+
+rewriter messyA Number a {
+    return a;
+}
+
+rewriter messyB Number b {
+    return rewrite b with messyA;
+}
+
+rewriter messyc Number c {
+    return rewrite c with messyA;
+}
+
+rewriter messyd Number d {
+    result := 0;
+    if(d > 10) {
+        result = rewrite d with messyB;
+    } else {
+        result =rewrite d with messyc;
+    }
+    return result;
+}

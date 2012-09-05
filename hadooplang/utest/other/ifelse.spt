@@ -1,0 +1,40 @@
+module expressions
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module testjobchains
+
+    mapper mapA  : Number docid : String text {  
+]]
+
+
+test ifelse1 [[if(True) {}   ]]
+test ifelse1 [[if(1) {}      ]] 1 errors
+test ifelse1 [[if("True") {} ]] 1 errors
+
+test ifelse1 [[if(True) {} else {}   ]] 0 errors
+test ifelse1 [[if(1) {} else {}      ]] 1 errors
+test ifelse1 [[if("True") {} else {} ]] 1 errors
+
+
+test ifelse1 [[if(True) {} elseif(True) {} else {} ]] parse fails
+test ifelse1 [[if(True) {} else if(True) {} else {} ]] parse fails
+test ifelse1 [[if(True) {} else {} else {} ]] parse fails
+
+test ifelse1 [[
+    if(True) {
+        
+    } else {
+      if(False) {
+          
+      } else {
+          
+      }  
+    } 
+]]
+
+setup Hadooplang program footer [[
+    write docid:text;
+    }
+]]

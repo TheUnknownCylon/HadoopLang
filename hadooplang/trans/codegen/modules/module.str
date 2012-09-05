@@ -1,0 +1,225 @@
+module trans/codegen/modules/module
+
+imports
+  include/Hadooplang
+  lib/analysis-library.generated
+  
+  trans/index
+  
+  trans/types/typeof
+  trans/inputs/inputs
+
+  trans/codegen/compiler
+  trans/codegen/types
+  trans/codegen/modules/rewriter
+  trans/codegen/modules/mapper
+  trans/codegen/modules/reducer
+  trans/codegen/statements
+  trans/codegen/expressions
+  trans/codegen/inputs
+  
+  trans/codegen/names
+  
+rules
+  /**
+   * Notes on compiling a module:
+   *  - For each rewriter, mapper and reducer, a separate java class is generated
+   *  - The other commands in the module will be used to create a Hadoop job.
+   *    This hadoop job will the main entry of the java application
+   */
+    
+  to-java: m@Module(filename, imports, rules*) -> <concat>[mapperfiles, reducerfiles, rewriterfiles, [javafile]]
+    with (chaincode, mappers, reducers) := <get-chain> m
+    where jobjava := $[
+        public class jobs {
+            public static void main(String["[]"] args) throws IOException, InterruptedException, ClassNotFoundException {
+                [chaincode]
+            }
+        }
+    ]
+    where
+        javafile := JavaFile("hdp", $[jobs], jobjava);
+        (mapperfiles, rewritersm)  := <mappers-to-java> mappers;
+        (reducerfiles, rewritersr) := <reducers-to-java> reducers;
+        
+        rootrewriters := <nub> <concat> [rewritersm, rewritersr];
+        rewriterfiles := <rewriters-to-java> ([], rootrewriters)
+  
+/**
+ * Parse and collect all mappers, reducers and rewriters to store
+ */
+rules
+    mappers-to-java: [] -> ([], [])        
+    mappers-to-java: [map'|rest] -> (javafiles', rewriterslist')
+        where
+            mapper := <get-node> map';
+            (javafile, rewriterlist) := <to-java> mapper;
+            (javafiles, rewriters) := <mappers-to-java> rest;
+            javafiles' := <concat> [[javafile], javafiles];
+            rewriterslist' := <nub> <concat> [rewriterlist, rewriters]
+            
+    reducers-to-java: [] -> ([], [])
+    reducers-to-java: [red'|rest] -> (javafiles', rewriterslist')
+        where
+            reducer := <get-node> red';
+            (javafile, rewriterlist) := <to-java> reducer;
+            (javafiles, rewriters) := <reducers-to-java> rest;
+            javafiles' := <concat> [[javafile], javafiles];
+            rewriterslist' := <nub> <concat> [rewriterlist, rewriters]
+  
+  
+  
+  rewriters-to-java: (parsedlist, []) -> []
+  rewriters-to-java: (parsedlist, [RewriteRef(rew)|rest]) -> javafiles'
+        where
+            rewriter := <get-node> rew;
+            parsedlist' := <concat> [[rew], parsedlist];
+            
+            //we do not need to create files for alias rewriters
+            // (we have only Rewriter and RewriterAlias)
+            (
+                Rewriter(_, _, _, _) := rewriter;
+                (javafile, rewriterslist) := <to-java> rewriter
+            <+
+                javafile := [];
+                rewriterslist := []
+            );            
+            
+            //append all elements in rewriterslist, which are not 
+            // in parsedlist' to rest
+            rest' := <nub> <concat> [<find-unparsed> (rewriterslist, parsedlist'), rest];
+            
+            javafiles  := <rewriters-to-java> (parsedlist', rest'); 
+            javafiles' := <concat> [[javafile], javafiles]
+
+  //return a list of elements which is in the first arguments list, but
+  // not in the second
+  find-unparsed: ([], parsedlist) -> []
+  find-unparsed: ([rw|morerw], parsedlist) -> <nub> parsedlist'
+    where
+        (   
+            not(<fetch(?rw)> parsedlist);
+            parsedlist' := <concat> [[rw], <find-unparsed> (morerw, parsedlist)]
+        <+ 
+            parsedlist' := <find-unparsed> (morerw, parsedlist)
+        )
+        
+/**
+ * The instructions below will generate a correct map/reduce chain for each found write-statement.
+ * Once the chain is generated, a Java Hadoop job will be generated, and returned in a separate main-class.
+ */ 
+rules
+    get-chain: m@Module(filename, imports, rules*) -> (javacode, mappers, reducers)
+        where
+            mrjobs   := <collect-all(is-mapreduce, conc)> m;
+            stores   := <collect-all(is-store, conc)> m;
+            (javacode, mappers, reducers) := <chain-to-java(|stores)> mrjobs
+            
+    is-store:     s@Store(_) -> s
+    is-mapreduce: m@DatasetDef(_, MapReduceChain(_, _, _)) -> m
+    
+    
+    chain-to-java(|stores): [] -> ($[], [], [])
+    chain-to-java(|stores): [job|jobrest] -> (javacode'', mappers'', reducers'')
+        where
+            //get code, mapper, and reducer for the current chain
+            (javacode, mapper, reducer) := <chain-to-java'(|stores)> job;
+            
+            //get the values for the other remaining jobs
+            (javacode', mappers', reducers') := <chain-to-java(|stores)> jobrest;
+            javacode'' := <concat-strings> [javacode, javacode'];
+            mappers''  := <nub> <concat> [[mapper], mappers'];
+            reducers'' := <nub> <concat> [[reducer], reducers']
+        
+    
+    chain-to-java'(|stores):
+        DatasetDef(varname, MapReduceChain(input, MRMapper(MapperRef(map')), MRReducer(ReducerRef(reduce')))) ->
+            (javacode, map', reduce')
+        where
+            jobname := <gen-new-name(|"job")>;
+            outputname := $[job_[varname]];
+
+            mapper := <get-node> map';
+            reducer := <get-node> reduce';
+            
+            m@Mapper(mapperclass', _) := mapper;
+            r@Reducer(reducerclass', _) := reducer;
+
+            mapperclass := <name-of> m;
+            reducerclass := <name-of> r;
+            
+            jobinput := <to-java-job-input(|jobname)> input;
+            joboutput := <to-java-job-output(|jobname)> (varname, outputname);
+
+            TwoType(mapoutputkeyclass', mapoutputvalueclass') := <innertype> <type> <type-of> mapper;
+            TwoType(outputkeyclass', outputvalueclass') := <innertype> <type> <type-of> reducer;
+
+            mapoutputkeyclass := <type'-to-hadoop-nongeneric> mapoutputkeyclass';
+            mapoutputvalueclass := <type'-to-hadoop-nongeneric> mapoutputvalueclass';
+            
+            outputkeyclass :=  <type'-to-hadoop-nongeneric> outputkeyclass';
+            outputvalueclass := <type'-to-hadoop-nongeneric> outputvalueclass'
+    
+            
+        where javacode := $[
+            /** JOB **/
+              Deletedir.deleteDir("[outputname]");
+              
+              Job [jobname] = new Job(new Configuration(), "Job [jobname]");
+              [jobname].setMapperClass([mapperclass].class);
+              [jobname].setReducerClass([reducerclass].class);
+
+              /* Job input */
+              [jobname].setMapOutputKeyClass([mapoutputkeyclass].class);
+              [jobname].setMapOutputValueClass([mapoutputvalueclass].class);
+              [jobinput]
+            
+              /* Job output */
+              [jobname].setOutputKeyClass([outputkeyclass].class);
+              [jobname].setOutputValueClass([outputvalueclass].class);
+              [joboutput]
+                    
+              /* Execute the job */
+              [jobname].waitForCompletion(true);
+        ]
+
+    
+    
+    /**
+     * Returns the required job-input-settings for a given input 
+     */
+    
+    //Input from a hadoop job input
+    to-java-job-input(|jobname): MRInputMethod(method, params) -> javacode
+        where javacode := <to-java-input-job(|jobname, params)> DataInput(method)
+    
+    //Input from a previous job
+    to-java-job-input(|jobname): MRInputSet(ref) -> javacode
+        where
+            DatasetDef(defname, deftype) := <get-node> ref;
+            inputdir := $[job_[defname]]
+        where
+            javacode := $[
+                [jobname].setInputFormatClass(SequenceFileInputFormat.class);
+                SequenceFileInputFormat.addInputPath([jobname], new Path("[inputdir]"));
+            ]
+            //FileInputFormat.setInputPaths([jobname], new Path("[inputdir]"));
+    
+        
+    /**
+     * Returns the required job-output-format for the given reducer
+     */
+     to-java-job-output(|jobname): (varname, outputname) -> javacode
+        where
+        	( //there is no store-statement, store in an efficient (Hadoop) byte parsing format
+        		Def(uri) := <index-lookup> varname;
+                <equal>(0, <length> <index-get-all> StoreDatasetHDP(uri));
+                javacode := $[
+                    [jobname].setOutputFormatClass(SequenceFileOutputFormat.class);
+                    SequenceFileOutputFormat.setOutputPath([jobname], new Path("[outputname]"));
+                ]
+        	) <+
+        	  //there is a store-statement: store in human readable format
+                javacode := $[FileOutputFormat.setOutputPath([jobname], new Path("[outputname]"));
+                ]        	  
+              

@@ -1,0 +1,82 @@
+module trans/codegen/vars
+
+imports
+  include/Hadooplang
+  lib/editor-common.generated
+  
+  trans/index
+  trans/types/typeof
+  trans/types/operators
+  
+  trans/codegen/compiler
+  trans/codegen/types
+  trans/codegen/names
+  
+  
+/**
+ * Optimized string defintion for speed
+ */
+rules
+    to-java: DatasetRef(varref) -> $[[varref].toString()]
+        where <equal>(String(), <type-type-of> <get-node> varref);
+        not(<equal>(<length> <get-all-dataupdates> varref, 0))
+
+    
+    to-java: DatasetDefStatement(key, value)
+        -> $[StringBuffer [key] = new StringBuffer([<to-java> value]);
+        ]
+      where
+          <equal>(String(), <type-type-of> value);
+          not(<equal>(<length> <get-all-dataupdates> key, 0))
+
+    
+    to-java: DatasetSetVar(DatasetRef(varref), expr) -> $[[varref].append([<to-java> expr']);
+    ]
+        where 
+          <equal>(String(), <type-type-of> <get-node> varref);
+          expr' := <is-stringbufferupdate(|varref)> expr
+
+    to-java: DatasetSetVar(DatasetRef(varref), expr) -> $[[varref] = new StringBuffer([<to-java> expr]);]
+        where 
+          <equal>(String(), <type-type-of> <get-node> varref);
+          not(<is-stringbufferupdate(|varref)> expr)
+    
+    
+    //Returns if the most inner PLUS of a sequence of PLUS operations
+    // is varref, e.g. PLUS(PLUS(PLUS(PLUS(DatasetRef(varref), b), c), d),e_) 
+    // All but the most innerplus is returned: PLUS(PLUS(PLUS(b, c), d), e)
+    is-stringbufferupdate(|varref): OpExp(OpPlus(), DatasetRef(a), b) -> b
+        where <equal>(a, varref)
+    is-stringbufferupdate(|varref): OpExp(OpPlus(), a, b) -> OpExp(OpPlus(), <is-stringbufferupdate(|varref)> a, b)
+    
+/**
+ * When there are no optimizations to make, do it the 'regular' way.
+ */
+
+
+rules
+    to-java: DatasetRef(key) -> $[[key]]
+    
+    
+rules    
+    to-java: DatasetDefStatement(key, value) -> $[[type] [key] = [<to-java> value];
+    ] where type := <type-to-java> <type-of> value
+            
+
+    to-java: DatasetSetVar(varref, value) -> $[[<to-java> varref] = [<to-java> value];]
+
+    to-java: ForloopSet(vardef, expr, block) ->
+        $[
+          for([ittype] [name] : [expr']) [block']
+        ]
+      
+      where
+          not(<is-dataset> <type-of> expr)
+      where
+          name := vardef;
+          expr' := <to-java> expr;
+          block' := <to-java> block;
+          ittype := <type'-to-java> <innertype> <type> <type-of> expr
+          
+
+    

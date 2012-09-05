@@ -1,0 +1,99 @@
+module trans/types/operators
+
+imports
+    include/Hadooplang
+    trans/types/typeof
+
+signature constructors
+    OpExp           : OpType * a * b -> OpExp
+    OpPlus          : OPType
+    OpMin           : OpType
+    OpTimes         : OpType
+    OpDivide        : OpType
+    OpModulo        : OpType
+    OpAnd           : OpType
+    OpOr            : OpType
+    OpGreaterThan   : OpType
+    OpSmallerThan   : OpType
+    OpEqSmallerThan : OpType
+    OpEqGreaterThan : OpType
+    
+    OpEquals        : OpType
+
+
+/**
+ * Plus: has overload
+ */
+rules
+    
+    type-of-op(): (OpPlus(), a, b) -> Num()
+        where <type-both(|Num())> (a, b)
+        
+    type-of-op(): (OpPlus(), a, b) -> String()
+        where <type-both(|String())> (a, b)
+
+    type-of-op(): (OpPlus(), a, b) -> String()
+        where  <type-oneshouldbeXotherY(|Num(), String())> (a, b)
+
+
+/**
+ * Non overloaded operators
+ */
+rules
+    type-of-op: (OpMin(), a, b) -> Num()
+        where <type-both(|Num())> (a, b)
+    
+    type-of-op: (OpTimes(), a, b) -> Num()
+        where <type-both(|Num())> (a, b)
+
+    type-of-op: (OpDivide(), a, b) -> Num()
+        where <type-both(|Num())> (a, b)
+
+    type-of-op: (OpModulo(), a, b) -> Num()
+        where <type-both(|Num())> (a, b)
+
+    type-of-op: (OpGreaterThan(), a, b) -> Bool()
+        where <type-both(|Num())> (a, b)
+
+    type-of-op: (OpSmallerThan(), a, b) -> Bool()
+        where <type-both(|Num())> (a, b)
+
+    type-of-op: (OpEqGreaterThan(), a, b) -> Bool()
+        where <type-both(|Num())> (a, b)
+
+    type-of-op: (OpEqSmallerThan(), a, b) -> Bool()
+        where <type-both(|Num())> (a, b)
+
+    type-of-op: (OpAnd(), a, b) -> Bool()
+        where <type-both(|Bool())> (a, b)
+
+    type-of-op: (OpOr(), a, b) -> Bool()
+        where <type-both(|Bool())> (a, b)
+
+    type-of-op: (OpEquals(), a, b) -> Bool()
+        where <equal> (<type-of> a, <type-of> b)
+
+
+/**
+ * All type-of-op failed
+ */
+rules
+    type-of-op: x@(op, a, b) -> <fail>
+        where <debug(!" Type of op failed for ")> x
+    
+/**
+ * Helper methods
+ */
+rules
+    //both a and b should be of type desiredtype
+    type-both(|desiredtype): x@(a, b) -> x
+        where
+            <equal> (<type-type-of> a, desiredtype);
+            <equal> (<type-type-of> b, desiredtype)
+    
+    //both a and b should be of type desiredtype
+    type-oneshouldbeXotherY(|desiredtypeA, desiredtypeB): x@(a, b) -> x
+        where
+            (<equal> (<type-type-of> a, desiredtypeA); <equal> (<type-type-of> b, desiredtypeB) <+
+             <equal> (<type-type-of> a, desiredtypeB); <equal> (<type-type-of> b, desiredtypeA) )
+             

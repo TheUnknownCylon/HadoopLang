@@ -1,0 +1,101 @@
+module trans/index
+
+/**
+ *This file contains all rules needed to build the lookup index.
+ */ 
+
+imports
+
+  include/Hadooplang
+  
+  libstratego-lib
+  include/Hadooplang
+  lib/editor-common.generated
+  lib/analysis-auto.generated
+  lib/index-library.generated
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+
+
+
+signature constructors
+    StoredNode : URI * Data -> NodeData
+    StoredDataUpdate: URI * Data -> StoredDataUpdate
+    CachedError: URI * Data -> DDef
+    StoreDatasetHDP: URI -> StoreDatasetHDP   //used for compiling only!
+    
+
+rules
+    adjust-index-def-data(store-results|namespace, path):
+        e -> <store-results> StoredNode([namespace | path], e)
+
+    /**
+     * Puts a node in the index
+     */
+    put-node: x -> None()
+    where
+    	file := <index-get-current-file>;
+        <index-add(|file)> x
+
+/**
+ * The following rules will return values from the index.
+ *   get-node and get-all nodes will return StoredNodes
+ *   get-dataupdate and get-all-dataupdates will return variable change statements
+ */
+rules
+    get-node:   x  -> <index-get-value> StoredNode(uri, ())
+        where Def(uri) := <index-lookup> x
+
+    get-all-nodes:   x  -> <index-get-all-values> StoredNode(uri, ())
+        where Def(uri) := <index-lookup> x
+
+    get-dataupdate: x -> <index-get-value> StoredDataUpdate(uri, ())
+        where Def(uri) := <index-lookup> x
+        
+    get-all-dataupdates:   x  -> <index-get-all-values> StoredDataUpdate(uri, ())
+        where Def(uri) := <index-lookup> x
+    
+    get-uses:  x -> <index-get-all> Use(uri)
+        where Def(uri) := <index-lookup> x
+
+
+/**
+ * Aditional stores
+ */
+rules
+    extra-index-hook: r@DatasetSetVar(DatasetRef(varname{[ns|path]}), expr) ->
+        <put-node> StoredDataUpdate([ns|path], r) 
+
+    extra-index-hook: Store(name{[ns|path]}) ->
+        <put-node> StoreDatasetHDP([ns|path])
+
+rules //import rewriters
+    adjust-index-lookup(target |namespace, path, prefix):
+        RewriteRef(<target>) -> <concat> [[], [[Rewriter() | path]], importPaths]
+    with importPaths := <filter(import-rewriter-to-path)> <index-get-all-in-file(|Import())> <index-get-current-file>
+        
+
+    import-rewriter-to-path:
+        Def([Import(), OneImportRewriter(mod, RewriteRef(name))|_])
+          -> Def([Rewriter(), name, mod])
+
+rules //import mappers
+    adjust-index-lookup(target |namespace, path, prefix):
+        MapperRef(<target>) -> <concat> [[], [[Mapper() | path]], importPaths]
+    with importPaths := <filter(import-mapper-to-path)> <index-get-all-in-file(|Import())> <index-get-current-file>
+        
+
+    import-mapper-to-path:
+        Def([Import(), OneImportMapper(mod, MapperRef(name))|_])
+          -> Def([Mapper(), name, mod])
+
+rules //import reducers
+    adjust-index-lookup(target |namespace, path, prefix):
+        ReducerRef(<target>) -> <concat> [[], [[Reducer() | path]], importPaths]
+    with importPaths := <filter(import-reducer-to-path)> <index-get-all-in-file(|Import())> <index-get-current-file>
+        
+
+    import-reducer-to-path:
+        Def([Import(), OneImportReducer(mod, ReducerRef(name))|_])
+          -> Def([Reducer(), name, mod])
+

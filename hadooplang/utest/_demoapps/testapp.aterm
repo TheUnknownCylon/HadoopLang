@@ -1,0 +1,25 @@
+[ If(
+    Equals(Num("2"), Num("1"))
+  , Block([If(False(), Block([]), None())])
+  , None()
+  )
+, loop(
+    ForloopSet(
+      "x"
+    , List(TypeString(), [])
+    , loopblock(
+        Block(
+          [ loop(
+              ForloopDict(
+                ForKeyDef("k")
+              , "v"
+              , Dict(TypeString(), [])
+              , loopblock(Block([]))
+              )
+            )
+          ]
+        )
+      )
+    )
+  )
+]

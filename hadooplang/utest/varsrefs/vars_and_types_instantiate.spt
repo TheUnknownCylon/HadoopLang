@@ -1,0 +1,74 @@
+
+module vars_creation
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module testvarsinstantiationwithtypes
+
+rewriter test String ignore {
+    ignore = ignore + ".";
+    ]]
+
+//vd: var declaration
+test vdstring [[ x := "aap"; ]]
+test vdint    [[ x := 1;     ]]
+test bdbool1  [[ x := True;  ]]
+test vdbool2  [[ x := False; ]]
+test vdbool3  [[ x := true;  ]] 1 error
+test vdbool4  [[ x := false; ]] 1 error
+test vdnoref  [[ x := oops;  ]] 1 error
+
+//vdd: var declarion dict
+test vddstring [[ x := String {};      ]]
+test vddint    [[ x := Number {};      ]]
+test vddbool   [[ x := Boolean {};     ]]
+test vddDict   [[ x := Dict(String){}; ]]
+test vddList   [[ x := List(String){}; ]]
+
+//vdl: var declaration list
+test vdlstring [[ x := String [];      ]]
+test vdlint    [[ x := Number [];      ]]
+test vdlbool   [[ x := Boolean [];     ]]
+test vdlDict   [[ x := Dict(String)[]; ]]
+test vdlList   [[ x := List(String)[]; ]]
+
+//test declaration of values in dict
+//dict key should always be a string
+test dictKeyString [[ x := String{"a": "a"};      ]]
+test dictKeyInt    [[ x := String{1: "a"};        ]] 1 error
+test dictKeyInt    [[ x := String{True: "a"};     ]] 1 error
+test dictKeyDict   [[ x := String{String{}: "a"}; ]] 1 error
+test dictKeyList   [[ x := String{String[]: "a"}; ]] 1 error
+
+//test dictinary values match the original values
+// by setting initially
+test dictValueTypeString1 [[ x := String{"a": "a"};        ]]
+test dictValueTypeString2 [[ x := String{"a": 1};          ]] 1 error
+test dictValueTypeString3 [[ x := String{"a": "a", "b":1}; ]] 1 error
+test dictValueTypeString4 [[ x := String{"a": 0, "b":1};   ]] 2 errors
+
+test dictValueTypeInt1    [[ x := Number{"a": "a"};        ]] 1 error
+test dictValueTypeInt2    [[ x := Number{"a": 1};          ]]
+test dictValueTypeInt3    [[ x := Number{"a": "a", "b":1}; ]] 1 error
+test dictValueTypeInt4    [[ x := Number{"a": 0, "b":1};   ]]
+test dictValueTypeInt5    [[ x := Number{"a": "0", "b":"1"};]] 2 errors
+
+test dictValuesDict1 [[ x := Dict(String){"a": String{} };        ]]
+test dictValuesDict1 [[ x := Dict(String){"a": Boolean{} };       ]] 1 error
+test dictValuesDict1 [[ x := Dict(String){"a": Number{} };        ]] 1 error
+test dictValuesDict2 [[ x := Dict(String){"a": String{"a": "a"} };]]
+test dictValuesDict3 [[ x := Dict(String){"a": String{"a": 1} };  ]] 1 error
+
+//test also the list values indices
+test listValueTypeString1 [[ x := String["a"];      ]]
+test listValueTypeString1 [[ x := String[1];        ]] 1 error
+test listValueTypeString1 [[ x := String["a", "1"]; ]]
+test listValueTypeString1 [[ x := String["a", 1];   ]] 1 error
+test listValueTypeString1 [[ x := String[1, 1];     ]] 2 errors
+
+
+setup Hadooplang program footer [[
+    return x;
+}
+]]

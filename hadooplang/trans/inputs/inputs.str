@@ -1,0 +1,46 @@
+module trans/inputs/inputs
+
+imports
+  libstratego-lib
+  include/Hadooplang
+  lib/editor-common.generated
+  lib/analysis-auto.generated
+  lib/index-library.generated
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+
+  trans/types/typeof
+
+
+signature constructors
+    DataInput : Name -> DataInput
+
+
+
+rules
+    inputmethods: _ -> ["lines", "keyvalues", "csv"]
+
+
+rules
+    /* ***
+     * Each line as an input
+     */
+     type-of: DataInput("lines") -> Type(List(TwoType(Num(), String())), 1)
+
+     
+//      
+// rules
+//     /** ***
+//      * Key values:
+//      *  Input file is a set of lines, per line:
+//      *    Key(String)\tValue(String)\n
+//      */
+//      type-of: Input("keyvalues") -> TwoType(Type(String(), 1), Type(String(), 1))
+//      
+//      
+//      
+// rules
+//     /* ***
+//      * csv
+//      * 
+//      */

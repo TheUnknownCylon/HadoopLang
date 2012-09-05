@@ -1,0 +1,188 @@
+module trans/types/typeof
+
+imports
+   include/Hadooplang
+   trans/index
+   trans/inputs/inputs
+   
+   trans/lib/string
+   trans/types/operators
+   
+   lib/analysis-library.generated
+
+signature constructors
+    TwoType : Type * Type -> Type
+    
+    Type     : Type * IsHadoop -> Type
+    
+    Bool     : Type
+    Num      : Type
+    String   : Type 
+    List     : Innertype -> Type
+    Dict     : Innertype -> Type
+    Iterator : Innertype -> Type
+    Unknown  : Type
+
+
+rules
+    type-of: DatasetRef(d)    -> <type-of> <index-lookup> d
+    type-of: DictAccess(ref, index) -> Type(<innertype> <type-type-of> ref, 0)
+
+
+rules //Pretty-format type names, for nicer warnings and errors
+    type-name: Type(t, _) -> <type-name> t
+    
+    type-name: Bool()    -> $[Boolean]
+    type-name: Num()     -> $[Number]
+    type-name: String()  -> $[String]
+    type-name: List(l)   -> $[[<type-name> l]-list]
+    type-name: Dict(d)   -> $[[<type-name> d]-dict]
+    type-name: Iterator(i) -> $[[<type-name> i]-iterator]
+    type-name: Unknown() -> $[Unknown (bug!!!)]
+    
+    type-name: TwoType(k, v) -> $[Key/value pair ([<type-name> k], [<type-name> v])]
+    
+    type-name: l -> $[One of {[typelist]}]
+        where 
+            <gt>(<length> l, 1);
+            typelist := <concat-strings> <map(type-name; add-comma)> l //TODO: RENICE
+    
+    type-name: l -> <type-name> l1
+        where [l1|_] := l
+    
+    
+    type-of-name: x      -> <type-name> <type-of> x
+    type-of-name: x      -> <type-name> Unknown()
+
+    
+rules
+    innertype: Dict(x)     -> x
+    innertype: List(x)     -> x
+    innertype: Iterator(t) -> t
+    
+    is-rewrite: RewriteRef(_) -> <id>
+    is-rewrite: _                -> <fail>
+    
+    is-type-list: List(_)  -> <id>
+    is-type-list: _        -> <fail>
+ 
+    is-type-dict: Dict(_)  -> <id>
+    is-type-dict: _        -> <fail>
+    
+    is-type-iterator: Iterator(_) -> <id>
+    is-type-iterator: _           -> <fail>
+    
+    is-dataset: e@Type(datatype, dataset) -> e
+        where <equal>(dataset, 1)
+        
+    type-of-is-dataset: e -> e
+        where <is-dataset> <type-of> e
+
+
+rules  
+    type-type-of: x -> <type> <type-of> x
+    type:      Type(x, _)    -> x
+    type:      TwoType(a, b) -> (<type> a, <type> b)
+    
+    type-of:   Def(uri)       -> <type-of> <index-get-value> StoredNode(uri, ())
+
+    type-of:   DatasetDef (_, s) -> <type-of> s
+    type-of:   DatasetDefStatement(_, s) -> <type-of> s
+    
+    type-of:   True()          -> Type(Bool(), 0)
+    type-of:   False()         -> Type(Bool(), 0)
+    
+    type-of:   TypeString()    -> String()
+    type-of:   TypeNum()       -> Num()
+    type-of:   TypeBoolean()   -> Bool()
+    type-of:   TypeDict(t)     -> Dict(<type-of> t)
+    type-of:   TypeList(t)     -> List(<type-of> t)
+    type-of:   TypeIterator(t) -> Iterator(<type-of> t)
+
+    type-of:   Num(_)          -> Type(Num(), 0)
+    type-of:   String(_)       -> Type(String(), 0)
+    type-of:   Dict(t, _)      -> Type(Dict(<type-of> t), 0)
+    type-of:   List(t, _)      -> Type(List(<type-of> t), 0)
+    type-of:   DictItem(k, t) -> <type-of> t //k is always a String!
+    //type-of:   Iterator(t, _) -> //! There can be no such constructor for an iterator!
+    
+
+rules
+    //Type of expressions
+    type-of: Brackets(t)  -> <type-of> t    
+    type-of: OpExp(op, a, b) -> Type(<type-of-op> (op, a, b), 0)
+ 
+rules
+    type-of: RewriterAlias(_, _, _, _, r) -> Type(<type-of> r, 0)
+    
+    type-of: Rewriter(_, _, _, block) -> <type-of> block
+    type-of: BlockReturn(_, r) -> <type-of> r
+       
+    type-of: r@Rewrite(dataset, RewriteRef(rewriter), args) -> Type(type, ds)
+        where
+            type := <type> <type-of> <index-lookup> rewriter;
+            (<is-dataset> <type-of> <index-lookup> rewriter; ds := 1 <+ ds := 0)
+
+rules
+    type-of: MRInputSet(ref)           -> <type-of> <index-lookup> ref
+    type-of: MRInputMethod(name, args) -> <type-of> DataInput(name)
+    
+    type-of: MapReduceChain(_, _, t3) -> <type-of> t3
+    
+    
+    type-of: MRMapper(MapperRef(m)) -> <type-of> <index-lookup> m
+    type-of: MRReducer(ReducerRef(r)) -> <type-of> <index-lookup> r
+    
+    type-of: MapReduceKey(t, _) -> Type(<type-of> t, 0)
+
+    
+    type-of: m@Mapper(_, _)   -> <type-of-by-write> m
+    type-of: r@Reducer(_, _)  -> <type-of-by-write> r
+
+    type-of: RewriterParameter(t, _) -> Type(<type-of> t, 0) //Let it be always zero. The code generation should take care of the cases where something else is expected
+    type-of: Parameter(t, _) -> Type(<type-of> t, 0)     //Always zero, since it is not allowed (due to optimization reasons) to give 1 values as arguments    
+
+    type-of: ReduceIterator(t, ds) -> Type(<type-of> t, 1)
+        where <is-type-iterator> <type-of> t //t is always an iterator!
+    
+    
+    type-of: w@write(key, value) -> t
+        where
+        (
+            <is-type-iterator> <type-type-of> key;
+            type-key := List(<innertype><type-type-of> key)
+        <+
+          type-key := <type-type-of> key  
+        ) ; (
+            <is-type-iterator> <type-type-of> value;
+            type-value := List(<innertype><type-type-of> value)
+        <+    
+            type-value := <type-type-of> value
+        )
+        where t:=  Type(List(TwoType(type-key, type-value)), 1)
+        
+        
+    type-of-by-write: t -> <type-of> write
+        where [write|_] := <get-all-writes> t
+             
+ 
+    //Returns all write-statements for a given (sub)tree
+    get-all-writes: subtree -> <collect-all(get-write, conc)> subtree
+    get-write: w@write(_, _) -> w
+
+
+
+rules
+    type-of: ForloopDict(_, k, set, _) -> Type(<innertype> <type> <type-of> set, ds)
+        where (<is-dataset> <type-of> set; ds := 1 <+ ds := 0 )
+    type-of: ForloopSet(_, set, _)     -> Type(<innertype> <type> <type-of> set, ds)
+        where (<is-dataset> <type-of> set; ds := 1 <+ ds := 0 )
+        
+    type-of: ForKeyDef(_)              -> <type-of> String("")
+        //TODO: Annotate ForKeyDef met parent, dan kan later de Type 0, 1 bepaald worden...
+
+rules  //in case everyting fails! Print an error!
+    type-of: x -> <fail>
+        where <debug(!"ERROR, Type-of-failed: ")> x
+        
+        

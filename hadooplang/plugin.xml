@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?eclipse version="3.0"?>
+
+<plugin>
+       <extension point="org.eclipse.imp.runtime.languageDescription">
+          <language extensions="hdp" description="Hadooplang" language="Hadooplang" derivedFrom="DynamicRoot" validator="hadooplang.HadooplangValidator" validatorClass="hadooplang.HadooplangValidator"></language>
+       </extension>
+       <extension id="hadooplang.parser" name="Hadooplang Parser" point="org.eclipse.imp.runtime.parser">
+          <parser class="hadooplang.HadooplangParseController" language="Hadooplang">
+          </parser>
+       </extension>    
+    </plugin>

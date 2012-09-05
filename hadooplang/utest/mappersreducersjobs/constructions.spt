@@ -1,0 +1,102 @@
+module expressions
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module constructions
+]]
+
+test normalmapper [[
+    mapper A : String k : String v {
+        write k: v;
+    }
+]] 0 errors
+
+test normalreducer [[
+    reducer A : String k : Iterator(String) v {
+        write k: 1;
+    }
+]] 0 errors
+
+test norewritermap [[
+    mapper A : String k : String v {}
+]] 1 errors
+
+test norewriterred [[
+    reducer A : String k : Iterator(String) v {}
+]] 1 errors
+
+test multiplewrtesmap_valid1 [[
+    mapper A : String k : String v {
+        write k: v;
+        write k: v;
+    }
+]] 0 errors
+
+test multiplewritesred_valid1 [[
+    reducer A : String k : Iterator(String) v {
+        write k : 1;
+        write k : 1;
+    }
+]] 0 errors
+
+test multiplewrtesmap_valid2 [[
+    mapper A : String k : String v {
+        for x in String[] {
+            write k: x;
+        }
+        write k: v;
+    }
+]] 0 errors
+
+test multiplewritesred_valid2 [[
+    reducer A : String k : Iterator(String) v {
+        for x in Number[] {
+            write k: x;
+        }
+        write k : 1;
+    }
+]] 0 errors
+
+test multiplewrtesmap_differenttypes [[
+    mapper A : String k : String v {
+        for x in String[] {
+            write k: x;           //write string: String
+        }                         //  is incompatible with
+        write k: 1;               //write String: Int
+    }
+]] 2 errors
+
+test multiplewritesred_differenttypes [[
+    reducer A : String k : Iterator(String) v {
+        for x in Number[] {
+            write k: "";
+        }                       //see previous test
+        write k : 1;
+    }
+]] 2 errors
+
+
+/*
+ * Some test on iterator parameters
+ */
+
+test mapper_itkeyvalue [[
+    mapper A : Iterator(String) k : Iterator(String) v {
+        write 0: 0;
+    }
+]] 2 errors
+
+test mapper_itkeyvalue [[
+    reducer A : Iterator(String) k : Iterator(String) v {
+        write 0: 0;
+    }
+]] 1 errors
+
+test mapper_returnit [[
+    reducer A : String k : Iterator(String) v {
+        write 0: v;
+    }
+]] 1 errors
+
+

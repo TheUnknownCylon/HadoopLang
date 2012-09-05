@@ -1,0 +1,31 @@
+module typecheks
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module testReferences
+
+    rewriter test String ignore {
+]]
+
+test nonexistence [[d := n;]]    1 error  // n is not defined
+
+test usedbeforedefined [[
+    d := n;
+    n := 1;
+]] 1 error  // n is not defined
+
+test cyclic [[
+    d := n;
+    n := d;
+]] 2 errors
+
+
+setup Hadooplang program footer [[
+       return 1;
+    }
+]]
+
+// 
+// 
+// test cyclicref [[rewriter test String x { d =n; n = d ;return False;}]] 2 errors  // n is not defined

@@ -1,0 +1,13 @@
+module grammar/Types
+
+%% Variable types free to be chosen by user
+
+exports
+  context-free syntax
+    "String"                -> Type {"TypeString"}
+    "Number"                -> Type {"TypeNum"}        %% double: xx.yy
+    "Boolean"               -> Type {"TypeBoolean"}
+    "Dict" "(" Type ")"     -> Type {"TypeDict"}
+    "List" "(" Type ")"     -> Type {"TypeList"}
+    "Iterator" "(" Type ")" -> Type {"TypeIterator"}
+    

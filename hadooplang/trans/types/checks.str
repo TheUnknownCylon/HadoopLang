@@ -1,0 +1,394 @@
+module trans/types/checks
+
+imports
+  include/Hadooplang
+  lib/analysis-library.generated
+  lib/analysis-auto.generated
+
+  trans/index
+  trans/types/typeof
+  trans/lib/lists
+   
+  trans/check
+  trans/types/operators
+  trans/types/operators
+
+
+rules
+    typecheck(|typetocheckfor): vartocheck -> <equal>(<type> <type-of> vartocheck, typetocheckfor)
+
+
+rules
+    constraint-error: DatasetSetVar(ref, expr) -> (expr, $[Wrong type, expected [expected], got [got].])
+        where
+            typeexpected := <type> <type-of> ref;
+            not(<typecheck(|typeexpected)> expr);
+            expected := <type-name> typeexpected;
+            got := <type-name> <type-of> expr
+
+rules
+    //check if the given operator is supported, if not, first look for a custom error message,
+    // if there is no such message, give an 'general' message
+    constraint-error: o@OpExp(op, a, b) -> errors
+        where
+            not(<type-of> o);
+            (
+              errors := <constraint-error-op> o
+            <+
+              errors := (o, $[Operator has no support for types [<type-name><type-type-of> a] and [<type-name><type-type-of> b].])  
+            )
+    
+    constraint-error-op: (OpPlus(), x, y)   -> <validate_both_sides(|[Num(), String()])>(x, y)
+    
+    constraint-error-op: (OpTimes(), x, y)  -> <validate_both_sides(|Num())>(x, y)
+    constraint-error-op: (OpMin(), x , y)   -> <validate_both_sides(|Num())>(x, y)
+    constraint-error-op: (OpDivide(), x, y) -> <validate_both_sides(|Num())>(x, y)
+    constraint-error-op: (OpModulo(), x, y) -> <validate_both_sides(|Num())>(x, y)
+    
+    constraint-error-op: (OpAnd(), x, y)    -> <validate_both_sides(|Bool())>(x, y)
+    constraint-error-op: (OpOr(), x, y)     -> <validate_both_sides(|Bool())>(x, y)
+    
+    constraint-error-op: (OpGreaterThan(), x, y)   -> <validate_both_sides(|Num())>(x, y)
+    constraint-error-op: (OpSmallerThan(), x, y)   -> <validate_both_sides(|Num())>(x, y)
+    constraint-error-op: (OpEqSmallerThan(), x, y) -> <validate_both_sides(|Num())>(x, y)
+    constraint-error-op: (OpEqGreaterThan(), x, y) -> <validate_both_sides(|Num())>(x, y)
+    
+    constraint-error-op: e@(OpEquals(), x, y)     -> (e, $[Expected the left and right hand side of == to be the same. Got [<type-name> x], and [<type-name> y].])
+    where not(<equal>(<type-of> x, <type-of> y))
+ 
+    constraint-error-op: e@(OpEquals(), x, y)     -> <validate_both_sides(|[Num(), String(), Bool()])>(x, y)
+
+/* *****
+ * Datasetdef for root statements
+ */
+rules    
+    constraint-error: MapReduceChain(input, map, reducer) -> errors
+        where
+            inputtype  := <type-of> input;
+            maptype    := <type-of> map;
+            reducetype := <type-of> reducer;
+
+            (errors-input := [<mrchaincheck(|inputtype)> input]
+             <+ errors-input := []
+            ); 
+            (errors-map := [<mrchaincheck(|inputtype)> map]
+             <+ errors-map := []
+            );
+            (errors-reduce := [<mrchaincheck(|maptype)> reducer]
+             <+ errors-reduce := []);
+            errors := <conc>(errors-input, errors-map, errors-reduce);
+            not(<equal>(<length> errors, 0))
+    
+    mrchaincheck(|x): m@MRInputSet(ref) -> (ref, $[Currently it not supported to continue with a stored dataset.])
+        where
+            Def(uri) := <index-lookup> ref;
+            not(<equal>(0, <length> <index-get-all> StoreDatasetHDP(uri)))
+            
+    mrchaincheck(|inputtype): m@MRMapper(MapperRef(mapper)) -> (mapper, $[Wrong mapper input type: expected [expected'], but got [got'].])
+        where
+            Mapper(name, MapInner(key, value, _)) := <get-node> mapper;
+
+            expectedkey := <type-type-of> key;
+            expectedvalue := <type-type-of> value;
+            expected := Type(List(TwoType(expectedkey, expectedvalue)), 1);
+                 
+            not(<equal>(expected, inputtype));
+            expected' := <type-name> expected;
+            got'      := <type-name> inputtype
+ 
+     mrchaincheck(|inputtype): m@MRReducer(ReducerRef(reducer)) -> (reducer, $[Wrong reducer input type: expected [expected'], but got [got'].])
+        where
+            Reducer(name, RedInner(key, value, _)) := <get-node> reducer;
+
+            expectedkey := <type-type-of> key;
+            expectedvalue := <innertype> <type-type-of> value;  //innertype: is reducer!
+            expected := Type(List(TwoType(expectedkey, expectedvalue)), 1);
+                 
+            not(<equal>(expected, inputtype));
+            expected' := <type-name> expected;
+            got'      := <type-name> inputtype
+            
+
+
+rules
+    write-to-rewriter-error: w -> (w, $[Not allowed in a rewriter: write.])
+    
+    constraint-error: r@Rewriter(t1, t2, t3, t4) -> errors
+        where
+            allwrites := <get-all-writes> r;
+            not(<equal>(<length> allwrites, 0));
+            errors := <map(write-to-rewriter-error)> allwrites
+            
+
+ 
+/* ******************
+ * Rewrite statements
+ *
+ * 1. Check type of element to rewerite
+ * 2. Check all arguments
+ *     -> Correct number of arguments should be given
+ *     -> Should be non-dataset
+ *     -> Should match the requested type :)
+ */
+rules    
+    
+    rewriter-main-type: Rewriter(_, x, _, _) -> <type> <type-of> x
+    rewriter-main-type: RewriterAlias(_, x, _, _, _) -> <type> <type-of> x
+        
+    rewriter-params: Rewriter(_, _, params, _) -> params
+    rewriter-params: RewriterAlias(_, _, params, _, _) -> params
+
+    rewriter-number-of-args: Rewriter(_, _, params, _) -> <length> params
+    rewriter-number-of-args: RewriterAlias(_, _, params, _, _) -> <length> params
+
+    constraint-error: Rewrite(resource, RewriteRef(rewriter), _) -> (resource, $[Wrong type!])
+        where not(<equal>(<rewriter-main-type> <get-node> rewriter, <type><type-of> resource))
+
+    constraint-error: r@Rewrite(_, RewriteRef(rewriter), args) -> (r, $[Wrong number of arguments is given, expected [expected] arguments, got [given].])
+        where
+            (Params(givenargs) := args <+ givenargs:=[]);
+            given := <length> givenargs;
+            expected := <rewriter-number-of-args> <get-node> rewriter;
+            not(<equal>(expected, given))
+
+    constraint-error: Rewrite(_, RewriteRef(rewriter), Params(args)) -> errors
+        where
+            paramtypes := <rewriter-params> <get-node> rewriter;
+            <equal>(<length> args, <length> paramtypes);
+            errors := <rewriter-params-typecheckhelper(|paramtypes)>args
+
+    rewriter-params-typecheckhelper(|x): [] -> []
+    rewriter-params-typecheckhelper(|paramtypes): args -> errors
+        where 
+            [p|ps] := paramtypes;
+            [a|as] := args;
+            errors' := <rewriter-params-typecheckhelper(|ps)> as;
+            (
+                not(<equal>(<type> <type-of> p, <type> <type-of> a));
+                errors := <union>([(a, $[Wrong type, expected [<type-of-name> p], got [<type-of-name> a].])], errors')
+              
+              <+
+                <is-dataset> <type-of> a;
+                errors := <union>([(a, $[It is not possible (yet) to have an Hadoop iterator as non-first argument.])], errors')
+              <+
+                errors := errors'
+            )
+
+
+/* ****************
+ * Iterator checks
+ */
+rules  
+    /**
+     * Give an error on each use of an iterator which is not the first use.
+     * The iterator may be empty then (the only case that the iterator is empty,
+     * is when it is used in an if/else construct without using it...)
+     */
+    constraint-warning: r@DatasetRef(name) -> errors
+        where
+            <is-type-iterator> <type-type-of> r;
+            (
+                errorsnode := <index-get-value> CachedError([name], ());
+                errors := (errorsnode, $[Iterator [name] is already used. Using it again probably means the set is empty!])
+                //TODO: REMOVE the possible_error from the index
+            <+
+                errors := ()
+            );
+            <put-node> CachedError([name], r);
+            not(<equal>((), errors))
+            
+
+
+/* *****************
+ * Write-statements
+ *  1) all writes in a map/reduce should be of the same type
+ *  2) each map/reduce should have at least one write statement
+ *     -> Otherwise useless map/reduce
+ *     -> Otherwise could not determine type-of the map/reduce 
+ *  3) do not allow write statements with an iterator.
+ */
+rules   
+    //All writes in a mapper or reducer should be of the same type
+    write-error-rewrite: e -> (e, $[All writes should should be of the same type.])
+    write-value: write(k, v) -> v
+    constraint-error: m@Mapper(_, _)  -> <write-all-of-same-type-errors>
+    constraint-error: r@Reducer(_, _) -> <write-all-of-same-type-errors> 
+    
+    valid_writetype: w -> w
+        where <type-of> w
+    
+    write-all-of-same-type-errors: t -> errors
+        where
+            //don't give an extra error on types which can not be determined
+            all-writes := <filter(valid_writetype)> <get-all-writes> t;
+            not(<list-eq> <map(type)> <map(type-of)> all-writes);
+            errors := <map(write-error-rewrite)> all-writes;
+            <gt>(<length> errors, 0) //only give error when we have some.
+
+
+    //Each map and reduce should have at least one write
+    constraint-error: m@Mapper(_, _)    -> <check-write-statements> m
+    constraint-error: r@Reducer(_, _)  -> <check-write-statements> r
+
+    check-write-statements: t -> (t, $[Each map and reduce should have at least one 1 write-statement.])
+        where <equal>(<length> <get-all-writes> t, 0)
+
+    constraint-error: write(k, v) -> errors
+        where
+            (
+                <is-type-iterator> <type-type-of> k;
+                <is-type-iterator> <type-type-of> v;
+                errors := [(k, $[Write statements can not have iterators as key.]),
+                           (v, $[Write statements can not have iterators as value.])]
+            <+
+                <is-type-iterator> <type-type-of> k;
+                errors := (k, $[Write statements can not have iterators as key.])
+            <+ 
+                <is-type-iterator> <type-type-of> v;
+                errors := (v, $[Write statements can not have iterators as value.])
+            )
+
+    constraint-error: r@Mapper(name, MapInner(key, value, block)) -> (value, $[A mapper can never have an iterator as input!])
+        where <is-type-iterator> <type-type-of> value
+        
+    constraint-error: r@Mapper(name, RedInner(key, value, block)) -> (value, $[A mapper can never have an iterator as input!])
+        where <is-type-iterator> <type-type-of> value
+
+
+rules
+    constraint-error: r@ReduceIterator(type, _) -> (r, $[An iterator is expected, got [<type-name> <type-of> type]])
+        where not(<is-type-iterator> <type-of> type)
+
+
+/**
+ * If/else statements
+ */
+rules
+    constraint-error: If(expr, _, _) -> (expr, $[A boolean value was expected, got [<type-name> <type-type-of> expr].])
+        where not(<equal>(Bool(), <type-type-of> expr))
+
+
+/* *********************************
+ * Checks for list and dict values
+ */
+rules
+    constraint-error: ExpDictaccess(x) -> (x, $[It is not allowed to acces a dict or list directly. You can get values from this element by using a loop-construction.]) 
+    
+    dict-item-value-to-error(|expectedtype): DictItem(_, v) -> (v, $[Expected [<type-of-name> expectedtype], got [<type-of-name> v]]) 
+    list-item-value-to-error(|expectedtype): v              -> (v, $[Expected [<type-of-name> expectedtype], got [<type-of-name> v]]) 
+	
+
+	constraint-error: ListDictSetItem(i@DictAccess(k, v), _) -> (i, $[Could not set or overwrite values of a list.])
+	   where List(x) := <type-type-of> k
+	
+	constraint-error: DictItem(k, v) -> (k, $[Dictionairy keys should be of type String, got [<type-of-name> k]])
+	   where not(<typecheck(|String())> k) 
+	
+	//Dict/list access
+    constraint-error: DictAccess(listdict, _) -> (listdict, $[A dictonairy or list was expected, got [<type-of-name> listdict].])
+        where not(Dict(x) := <type-type-of> listdict <+ List(x) := <type-type-of> listdict)
+    
+    constraint-error: DictAccess(dict, k) -> (k, $[Dictionairy keys are always of type String, got [<type-of-name> k]])
+        where Dict(x) := <type-type-of> dict; not(<typecheck(|String())> k)
+        
+    // constraint-error: DictAccess(list, k) -> (k, $[List indices are always of type Number, got [<type-of-name> k]])
+    //     where List(x) := <type-type-of> list; not(<typecheck(|Num())> k) 
+
+    constraint-error: Dict(dicttype, items) -> <map(dict-item-value-to-error(|dicttype))> erroritems
+        where erroritems := <filter(not(typecheck(|<type-of> dicttype)))> items
+        
+    constraint-error: List(listtype, items) -> <map(list-item-value-to-error(|listtype))> erroritems
+        where erroritems := <filter(not(typecheck(|<type-of> listtype)))> items
+
+    constraint-error: ListAddItem(list, _) -> (list, $[A list was exptected, got [<type-of-name> list]])
+        where not(List(x) := <type-type-of> list)
+
+    constraint-error: ListAddItem(list, expr) -> (expr, $[Appending wrong type to list.])
+        where List(x) := <type-type-of> list; not(<typecheck(|x)> expr) 
+
+
+/* ********************
+ * Checks for forloops
+ */
+rules
+    //constraint-error: ForloopDict(t1, t2, t3, t4)
+    constraint-error: ForloopSet(_, l, _) -> (l, $[A list or iterator was expected.])
+        where l' := <type-type-of> l;
+        not(<is-type-list> l' <+ <is-type-iterator> l')
+
+    constraint-error: ForloopDict(_, k, v, _) -> (v, $[A dict was expected.])
+        where not(<is-type-dict> <type-type-of> v)
+
+
+/**
+ * Rewriter aliases
+ *
+ * On Rewriter Aliases there should be no unused warnings,
+ * for now... Therefore let the system think they are in use.
+ *
+ * It works because RewriterAlias is processed BEFORE the def.
+ *
+ * A note will be used to inform the developper that he is doing
+ * unchecked stuff
+ */
+  extra-index-hook: r@RewriterAlias(_, p, ps, _, _) -> <fail>
+    where
+        RewriterParameter(_, pname{[ns|path]}) := p;
+        <put-node> Use([ns|path]);
+        <map(fake-use)> ps
+  fake-use: Parameter(_, pname{[ns|path]}) -> <put-node> Use([ns|path])
+
+  constraint-note: r@RewriterAlias(_, _, _, _, _) ->
+    (r, $[Rewriter aliases let you call external commands. The input and
+    output types are not checked in any form at editing level.
+    
+    See external documentation for proper use.
+    
+    If it passes the compile source to jar phase, the methods will work,
+    at least, it is compatible with the Hadooplang types..
+    
+    ** Use at your own risk **
+    
+    ])
+
+
+
+
+
+/* *********************************
+ * Helper method
+ * Validates two vars for type correctness.
+ * One type, or a list of matching types should be returned. The matching type should
+ *   be one of the selected types.
+ * For each incorrect type, a constraint-error output is returned. 
+ */
+rules
+    validate_both_sides(|comptype): (x, y) -> <validate_both_sides(|[comptype])> (x, y)
+        where not(<length> comptype)
+    
+    
+    validate_both_sides(|comptypes): (x, y) -> errors
+        where
+            <length> comptypes;
+            x' := <type-type-of> x; not(<fetch(?x')> comptypes);
+            y' := <type-type-of> y; not(<fetch(?y')> comptypes);
+
+            errors := [
+                (x, $[Wrong type; expected [<type-name> comptypes] got [<type-of-name> x].]),
+                (y, $[Wrong type; expected [<type-name> comptypes] got [<type-of-name> y].])
+            ]
+                        
+    validate_both_sides(|comptypes): (x, _) -> [errors]
+        where
+            <length> comptypes;
+            x' := <type-type-of> x; not(<fetch(?x')> comptypes);
+            errors := (x, $[Wrong type; expected [<type-name> comptypes], got [<type-of-name> x].])
+            
+    validate_both_sides(|comptypes): (_, y) -> [errors]
+        where
+            <length> comptypes;
+            y' := <type-type-of> y; not(<fetch(?y')> comptypes);
+            errors := (y, $[Wrong type; expected [<type-name> comptypes], got [<type-of-name> y].])
+    
+    
+    

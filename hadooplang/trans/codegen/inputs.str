@@ -1,0 +1,27 @@
+module trans/codegen/inputs
+
+imports
+  libstratego-lib
+  include/Hadooplang
+  lib/editor-common.generated
+  lib/analysis-auto.generated
+  lib/index-library.generated
+  lib/analysis-library.generated
+  lib/analysis-library-internal.generated
+
+  trans/types/typeof
+  trans/inputs/inputs
+  
+  trans/codegen/statements
+  trans/codegen/expressions
+
+rules
+     
+     to-java-input-job(|jobname, params): DataInput("lines") -> javacode
+        where
+            [file|_] := params;
+            javacode := $[
+                FileInputFormat.setInputPaths([jobname], [<to-java> file]);
+            ]
+     
+     

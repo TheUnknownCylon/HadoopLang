@@ -1,0 +1,273 @@
+module include/Hadooplang-parenthesize
+
+imports
+  libstratego-lib
+  include/Hadooplang
+
+
+strategies
+  io-Hadooplang-parenthesize =
+    io-wrap(parenthesize-Hadooplang)
+
+  parenthesize-Hadooplang =
+    innermost(HadooplangParenthesize)
+
+
+rules
+
+  HadooplangParenthesize :
+    Times(t_0, t_1) -> Times(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Min(_, _)
+            + ?Plus(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    Times(t_0, t_1) -> Times(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Min(_, _)
+            + ?Plus(_, _)
+            + ?Times(_, _)
+            + ?Divide(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    Divide(t_0, t_1) -> Divide(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Min(_, _)
+            + ?Plus(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    Divide(t_0, t_1) -> Divide(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Min(_, _)
+            + ?Plus(_, _)
+            + ?Divide(_, _)
+            + ?Times(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    Modulo(t_0, t_1) -> Modulo(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Min(_, _)
+            + ?Plus(_, _)
+            + ?Times(_, _)
+            + ?Divide(_, _)
+            + ?Modulo(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    Modulo(t_0, t_1) -> Modulo(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Min(_, _)
+            + ?Plus(_, _)
+            + ?Times(_, _)
+            + ?Divide(_, _)
+            + ?Modulo(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    EqGreaterThan(t_0, t_1) -> EqGreaterThan(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    EqGreaterThan(t_0, t_1) -> EqGreaterThan(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    EqSmallerThan(t_0, t_1) -> EqSmallerThan(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    EqSmallerThan(t_0, t_1) -> EqSmallerThan(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    SmallerThan(t_0, t_1) -> SmallerThan(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    SmallerThan(t_0, t_1) -> SmallerThan(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?SmallerThan(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    GreaterThan(t_0, t_1) -> GreaterThan(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    GreaterThan(t_0, t_1) -> GreaterThan(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?GreaterThan(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    Min(t_0, t_1) -> Min(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    Min(t_0, t_1) -> Min(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Min(_, _)
+            + ?Plus(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    Plus(t_0, t_1) -> Plus(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    Plus(t_0, t_1) -> Plus(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + ?EqGreaterThan(_, _)
+            + ?EqSmallerThan(_, _)
+            + ?SmallerThan(_, _)
+            + ?GreaterThan(_, _)
+            + ?Plus(_, _)
+            + ?Min(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    Equals(t_0, t_1) -> Equals(Parenthetical(t_0), t_1)
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + fail)> t_0
+
+  HadooplangParenthesize :
+    Equals(t_0, t_1) -> Equals(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + ?Equals(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    And(t_0, t_1) -> And(Parenthetical(t_0), t_1)
+    where <(?Or(_, _) + fail)> t_0
+
+  HadooplangParenthesize :
+    And(t_0, t_1) -> And(t_0, Parenthetical(t_1))
+    where <(?Or(_, _)
+            + ?And(_, _)
+            + fail)> t_1
+
+  HadooplangParenthesize :
+    Or(t_0, t_1) -> Or(t_0, Parenthetical(t_1))
+    where <(?Or(_, _) + fail)> t_1
+
+  HadooplangParenthesize :
+    ExpDictaccess(t_0) -> ExpDictaccess(Parenthetical(t_0))
+    where <(?ExpDictaccess(_) + fail)> t_0
+
+
+signature
+  constructors
+    Parenthetical : Unknown -> Unknown
+

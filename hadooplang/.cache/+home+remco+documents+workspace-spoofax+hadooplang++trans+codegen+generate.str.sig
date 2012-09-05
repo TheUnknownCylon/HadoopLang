@@ -1,0 +1,1 @@
+Module("trans/codegen/generate",[Imports([(),(),(),(),(),(),(),(),(),(),(),(),(),(),()]),Rules([SDefT("is-not-empty",[],[],[]),SDefT("generate-java",[],[],[]),SDefT("isnone",[],[],[]),SDefT("compile-java",[],[],[]),SDefT("append-libdir",[],[VarDec("d",ConstType(SortNoArgs("ATerm")))],[]),SDefT("extract-jar",[],[VarDec("destination",ConstType(SortNoArgs("ATerm")))],[])])])

@@ -1,0 +1,38 @@
+module testloops
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module testjobchains
+    rewriter length  String t {return 0;} 
+    reducer mapA  : Number docid : Iterator(String) text {  
+]]
+
+
+test loopnormall [[for v in String[] {}]] 0 errors
+test loopnormald [[for key:v in String{} {}]] 0 errors
+test loopnormaliterator [[for v in text {}]] 0 errors
+
+
+test loopfilterl [[
+    for v in String[] where(v=="test"){
+        
+    }]] 0 errors
+
+test loopfilterd [[
+    for k:v in String{} where(k==v) {
+        
+    }]] 0 errors
+
+test loopnormaliterator [[
+    for v in text where (0 == rewrite v with length) {
+        
+    }
+]] 0 errors
+
+
+
+setup Hadooplang program footer [[
+    write docid : 1;
+  }
+]]

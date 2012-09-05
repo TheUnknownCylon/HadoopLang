@@ -1,0 +1,102 @@
+module Hadooplang
+
+imports
+    lexical/Identifiers
+    layout/layout
+    grammar/Expressions
+    grammar/Types
+
+exports
+
+  context-free start-symbols
+    Start
+
+  context-free syntax
+  
+    "module" Module@=ID Import* RootStatement* -> Start {"Module", scope(Dataset, Datavar, Import, Rewriter, Mapper, Reducer)}
+    
+    Import@=ImportPart";"                            -> Import {"Import"}
+    "from" Module@ID "import" "mapper"   MapperRef   -> ImportPart {"OneImportMapper"}
+    "from" Module@ID "import" "reducer"  ReducerRef  -> ImportPart {"OneImportReducer"}
+    "from" Module@ID "import" "rewriter" RewriteRef  -> ImportPart {"OneImportRewriter"}
+    
+    Reducer@ID     -> ReducerRef {"ReducerRef"}
+    Rewriter@ID    -> RewriteRef {"RewriteRef"}
+    Mapper@ID      -> MapperRef  {"MapperRef"}
+    
+    "rewrite" Exp "with" RewriteRef Params -> Exp {"Rewrite", prefer}
+
+    Dataset@=ID ":=" MapReduceChain ";" -> RootStatement {"DatasetDef"}
+    "store" Dataset@ID ";"         -> RootStatement {"Store"} 
+
+    Rewriter                       -> RootStatement
+    Mapper                         -> RootStatement
+    Reducer                        -> RootStatement
+    
+    Statement                      -> MapReduceStatement
+    "write" Exp ":" Exp ";"        -> Statement{"write"}
+
+
+    MRInput "->" MRMapper "->" MRReducer -> MapReduceChain {"MapReduceChain"} 
+    "input" ID "(" {Exp ","}* ")"        -> MRInput   {"MRInputMethod"}
+    "input" Dataset@ID                   -> MRInput   {"MRInputSet"}
+    "map" "with" MapperRef               -> MRMapper  {"MRMapper"}
+    "reduce" "with" ReducerRef           -> MRReducer {"MRReducer"}
+
+    "{" Statement* "}"                   -> Block{"Block", scope(Dataset, Datavar)}
+    "{" MapReduceStatement* "}"          -> BlockMR{"BlockMR", scope(Dataset, Datavar, Mapper)} 
+    "{" Statement* "return" Exp ";" "}"  -> BlockReturn{"BlockReturn", scope(Dataset, Datavar)} 
+
+
+  context-free syntax
+    Type Datavar@=ID     -> RewriterParameter{"RewriterParameter"}
+    Type Datavar@=ID     -> Parameter        {"Parameter"}
+    "," Type Datavar@=ID -> CommaParameter   {"Parameter"}
+    
+    Type Datavar@=ID -> ReduceIterator {"ReduceIterator"}
+
+    "mapper"   Mapper@=ID  MapInner -> Mapper{"Mapper", scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}
+    "reducer"  Reducer@=ID RedInner -> Reducer{"Reducer", scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}
+
+    ":" MRKey ":" Parameter BlockMR      -> MapInner{"MapInner", scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}
+    ":" MRKey ":" ReduceIterator BlockMR -> RedInner{"RedInner", scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}
+    
+
+    "rewriter" Rewriter@=ID RewriterParameter CommaParameter* BlockReturn
+                                            -> Rewriter {"Rewriter", scope(Dataset, Datavar)}
+
+    "rewriter" Rewriter@=ID RewriterParameter CommaParameter* "alias" {JAVACLASS "."}* "returns" Type
+                                            -> Rewriter {"RewriterAlias", scope(Dataset, Datavar)}
+
+    Type Datavar@=ID -> MRKey      {"MapReduceKey"}
+
+ 
+  context-free syntax   
+    %% Statements
+    Datavar@=ID ":=" Exp ";"        -> Statement  {"DatasetDefStatement"}
+    DatasetRef "=" Exp ";"          -> Statement  {"DatasetSetVar"}
+    DatasetRef"[""]" "=" Exp ";"    -> Statement  {"ListAddItem"}
+    DictAccess "=" Exp ";" -> Statement  {"ListDictSetItem"}
+
+    If                        -> Statement
+    
+    %%enforce a new scope for for-loops. 
+    LoopStatement             -> Statement {"loop", scope(Dataset, Datavar)}
+    Block                     -> LoopBlock {"loopblock", scope(Dataset, Datavar)}
+
+    
+    "for" Datavar@=ID "in" Exp LoopBlock               -> LoopStatement{"ForloopSet", scope(Dataset, Datavar)}
+    "for" ForKeyDef ":" Datavar@=ID "in" Exp LoopBlock -> LoopStatement{"ForloopDict", scope(Dataset, Datavar)}
+
+    %%for loops with filter option
+    "for" Datavar@=ID "in" Exp "where" "(" Exp ")" LoopBlock                -> LoopStatement{"ForloopSet", scope(Dataset, Datavar)}
+    "for" ForKeyDef ":" Datavar@=ID "in" Exp  "where" "(" Exp ")" LoopBlock -> LoopStatement{"ForloopDict", scope(Dataset, Datavar)}
+
+
+    Datavar@=ID                      -> ForKeyDef{"ForKeyDef"}
+
+    
+    "if" "(" Exp ")" Block IfElse? -> If{"If"}
+    "else" Block                   -> IfElse{"IfElse"}
+    
+    

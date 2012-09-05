@@ -1,0 +1,29 @@
+module athermap
+
+
+
+from hdplib import rewriter tokenize;
+from messyrwlib import rewriter messyd;
+
+// 
+//   mapper parseinput : Number docid : String text {
+// 
+//     l := String[];
+//     l[] = "aa";   
+//         write docid : 1;
+//   }
+
+/** 
+ * Take an input text, split it up by tokens,
+ * normalize each token, and give it away.
+ */
+mapper parseinput : Number docid : String text {
+
+    tokenized :=  rewrite text with tokenize, " ";
+
+    q := rewrite 9 with messyd;
+  
+    for token in tokenized {
+       write token: docid;
+    } 
+}

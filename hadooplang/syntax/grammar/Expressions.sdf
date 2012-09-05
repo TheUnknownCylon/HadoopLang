@@ -1,0 +1,78 @@
+module grammar/Expressions
+
+imports
+    lexical/Identifiers
+    grammar/Types
+
+exports
+  context-free syntax
+    
+    %% Expressions
+    NUM                     -> Exp  {"Num"}
+    STRING                  -> Exp  {"String"}
+    DatasetRef              -> Exp
+   
+    Datavar@ID              -> DatasetRef  {"DatasetRef"}
+    DatasetRef "[" Exp "]"  -> DictAccess  {"DictAccess"}
+
+  context-free syntax
+    "True"                  -> Exp {"True"}
+    "False"                 -> Exp {"False"}
+
+
+  context-free syntax
+    %% Dicts and lists should have explicit types
+    Type "{" {DictItem ","}* "}" -> Exp  {"Dict"}
+    Type "[" {Exp ","}* "]"      -> Exp  {"List"}
+    Exp ":" Exp                  -> DictItem {"DictItem"}
+
+
+  context-free syntax
+    "," {Exp ","}*                -> Params {"Params"}
+                                  -> Params {"Params"}
+    %%Datavar@ID -> DatavarRef {"DatavarRef"}
+
+  context-free syntax
+    DictAccess              -> Exp {"ExpDictaccess", left, prefer}
+    "(" Exp ")"             -> Exp {"Brackets"}
+    
+    Exp "+" Exp             -> Exp {"Plus",   left} %% Num
+    Exp "*" Exp             -> Exp {"Times",  left} %% Num
+    Exp "-" Exp             -> Exp {"Min",    left} %% Num
+    Exp "/" Exp             -> Exp {"Divide", left} %% Num
+    Exp "%" Exp             -> Exp {"Modulo", left} %% Num
+    
+    Exp "&&" Exp            -> Exp {"And",    left} %% Bool
+    Exp "||" Exp            -> Exp {"Or",     left} %% Bool
+    
+    Exp "==" Exp            -> Exp {"Equals", left} %% Bool
+    
+    Exp ">"  Exp            -> Exp {"GreaterThan",   left} %% Bool
+    Exp "<"  Exp            -> Exp {"SmallerThan",   left} %% Bool
+    Exp ">=" Exp            -> Exp {"EqSmallerThan", left} %% Bool
+    Exp "<=" Exp            -> Exp {"EqGreaterThan", left} %% Bool
+    
+   
+  context-free priorities
+    { left:
+      Exp "[" Exp "]" -> Exp
+    } > { non-assoc:
+      Exp "%" Exp -> Exp
+    } > { left:
+      Exp "/" Exp -> Exp
+      Exp "*" Exp -> Exp 
+    } > { left:
+      Exp "+" Exp -> Exp
+      Exp "-" Exp -> Exp
+    } > { non-assoc:
+      Exp ">"  Exp -> Exp
+      Exp "<"  Exp -> Exp
+      Exp ">=" Exp -> Exp
+      Exp "<=" Exp -> Exp
+    } > { left:
+      Exp "==" Exp -> Exp
+    } > { left:
+      Exp "&&" Exp -> Exp
+    } > { left:
+      Exp "||" Exp -> Exp
+    }

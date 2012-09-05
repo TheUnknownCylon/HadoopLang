@@ -1,0 +1,115 @@
+module trans/codegen/generate
+// 
+imports
+  libstratego-lib
+  libstratego-gpp
+  libstratego-aterm
+  include/Hadooplang
+  lib/editor-common.generated
+  lib/compilation-library.generated
+  
+  trans/lib/string
+  
+  trans/types/typeof
+  trans/codegen/compiler
+  trans/codegen/output
+  trans/codegen/desugar
+  
+  trans/codegen/modules/module
+  
+  trans/check
+  trans/types/checks
+
+  lib/index-library.generated
+
+rules 
+  is-not-empty: x -> x
+    where not(<equal>([], x))
+  
+  generate-java:
+    (selected, position, ast, path, project-path) -> None()
+    where
+        editor-init;
+        index-setup(|<language>, [<project-path>], ".");
+        <compile-log(|0)> $[=====================];        
+        <compile-log(|0)> $[Begin compiling];
+        errors := <filter(is-not-empty)><collect-all(constraint-error, conc)> ast;
+        (     not(equal (<length> errors, 0));
+              <compile-log(|0)> $[There are errors! Trying to compile, but no guarantees.];
+              <debug(!" Errors: ")> errors
+          <+  <compile-log(|0)> $[No errors found.]
+        );
+        ast' := <desugar-compiler> ast;
+        java := <to-java> ast';
+        <debug(!"Done ")> $[];
+        <map(to-file(|"output", java))> java;
+        <compile-log(|0)> $[Compiling finished]
+
+
+  isnone: None() -> None()
+
+  compile-java:
+    (selected, position, ast, path, project-path) -> None()
+    where
+        editor-init;
+        index-setup(|<language>, [<project-path>], ".");
+        <compile-log(|0)> $[=====================];
+        <compile-log(|0)> $[Begin compiling];
+        
+        errors := <filter(is-not-empty)><collect-all(constraint-error, conc)> ast;
+        (
+            not(equal (<length> errors, 0));
+            <compile-log(|0)> $[There are errors! Aborting compilation to runnable JAR.];
+            <debug(!" Errors: ")> errors
+
+        <+  
+	        <compile-log(|0)> $[No errors found.];
+	        ast' := <desugar-compiler> ast;
+	        java := <to-java> ast';
+	        <debug(!"Done")> $[];
+	        
+	        builddir := <new-temp-dir> "output"; 
+	        <compile-log(|1)> $[output dir: [builddir]];
+	        
+	        libdir := "./lib_java";
+	        libfiles := <map(append-libdir(|libdir))> <readdir> libdir;
+	        javaclibs := $[[<concat-strings> <map(add-colon)> libfiles].];
+	                
+	        outputfiles := <filter(not(isnone))> <map(to-file(|builddir, java))> java;
+	        outputfilesstr := <concat-strings> <map(add-space)> outputfiles;
+	        
+	        <mkdir> $[[builddir]/compiled];
+	        javac := (
+	            $[javac],
+	            <string-tokenize(|[' '])> $[-d [builddir]/compiled -cp [javaclibs] [outputfilesstr]]
+	        );
+	        
+	        <compile-log(|1)> $[Compiling generated Java files to Java bytecode.];
+	        <call> javac;
+	        
+	        <compile-log(|1)> $[Preparing all external libraries.];
+	        
+	        //extract all libs for inclusion in jar
+	        <map(extract-jar(|$[[builddir]/compiled]))> libfiles;
+	        
+	        //remove all their meta files, lincences, etc.
+	        <call> ($[rm], [$[-R], $[-f], $[[builddir]/compiled/META-INF]]);
+	        
+	        <compile-log(|1)> $[Building .jar file];
+	        f := <fopen>($[[builddir]/manifest], "w");
+	        <fputs> ($[Main-Class: hdp.jobs
+	        ], f);
+	        <fclose> f;
+	        
+	        <call> ($[jar], [$[cfm], $[output.jar], $[[builddir]/manifest], $[-C], $[[builddir]/compiled], $[.]]);
+	        
+	        <compile-log(|0)> $[Compiling finished]
+	        
+        )
+
+  append-libdir(|d): str -> $[[d]/[str]]
+
+  extract-jar(|destination): file -> None()
+    where try(<call> ($[unzip], ["-o", "-d", destination, file, "*"]))
+
+    

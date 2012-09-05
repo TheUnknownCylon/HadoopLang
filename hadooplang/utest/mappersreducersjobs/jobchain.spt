@@ -1,0 +1,74 @@
+module expressions
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module testjobchains
+
+    mapper mapA  : Number docid : String text { write text : docid; }
+    reducer redB : String text : Iterator(Number) docid {
+        write 1 : "text";
+    }
+
+    mapper mapA2  : String docid : Number text { write text : docid; }
+    reducer redB2 : Number text : Iterator(String) docid {
+        write 1 : "text";
+    }
+]]
+
+
+test job1 [[
+    z := input lines("test") -> map with mapA -> reduce with redB;
+]] 0 errors
+
+test job2 [[
+    z := input lines("test") -> map with redB -> reduce with redB;
+]] 1 errors  //mapper is no mapper but reducer
+
+test job3 [[
+    z := input lines("test") -> map with mapA -> reduce with mapA;
+]] 1 errors  //reducer is no reducer but mapper
+
+test job4 [[
+    z := input lines("test") -> map with redB -> reduce with mapA;
+]] 2 errors  //mapper is not of type mapper, red is not of type reducer
+
+test job5 [[
+    z := input lines("test") -> map with mapA -> reduce with redB2;
+]] 1 errors  //redB2 takes wrong arguments
+
+test job6 [[
+    z := input lines("test") -> map with mapA -> reduce with redB2;
+]] 1 errors  //redB2 takes wrong arguments
+
+test job7 [[
+    z := input lines("test") -> map with mapA2 -> reduce with redB2;
+]] 1 errors  //mapper takes other type
+
+test job8 [[
+    z := input lines("test") -> map with mapA -> reduce with redB;
+    y := input z -> map with mapA -> reduce with redB;
+]] 0 errors
+
+
+test store1 [[
+    z := input lines("test") -> map with mapA -> reduce with redB;
+    store z;    
+]] 0 errors
+
+test storefail [[
+    store z;    
+]] 1 errors
+
+
+test job_cannot_input_stored [[
+    z := input lines("test") -> map with mapA -> reduce with redB;
+    store z;
+    y := input z -> map with mapA -> reduce with redB;
+]] 1 errors
+
+test job_cannot_input_stored_no_order [[
+    z := input lines("test") -> map with mapA -> reduce with redB;
+    y := input z -> map with mapA -> reduce with redB;
+    store z;  //order does not matter
+]] 1 errors

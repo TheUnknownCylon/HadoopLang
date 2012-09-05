@@ -1,0 +1,16 @@
+module Hadooplang.main
+
+imports Hadooplang-Builders Hadooplang-Colorer Hadooplang-Completions Hadooplang-Folding Hadooplang-Outliner Hadooplang-References Hadooplang-Syntax
+
+language General properties
+                  
+  name          : Hadooplang
+  id            : hadooplang
+  extends       : Root
+                  
+  description   : "Spoofax/IMP-generated editor for the Hadooplang language"
+  url           : http://strategoxt.org
+                  
+  extensions    : hdp
+  table         : include/Hadooplang.tbl
+  start symbols : Start

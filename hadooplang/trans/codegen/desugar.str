@@ -1,0 +1,41 @@
+module trans/codegen/desugar
+
+
+imports
+  include/Hadooplang
+
+  trans/index
+  trans/types/operators
+  trans/types/typeof
+
+
+rules
+    /* Note: If more rules are added, alltd may not be sufficient! */
+    desugar-compiler = innermost(desugar-compile)
+
+/**
+ * Desugar + statements, to support better string concatinations
+ *   A Plus operation over strings is written over multiple lines.
+ */
+rules
+    
+    desugar-compile: DatasetSetVar(DatasetRef(varref), expr) -> res'
+        where
+        	OpExp(OpPlus(), OpExp(OpPlus(), _, _), _) := expr;
+            <equal>(String(), <type-type-of> <get-node> varref); 
+            <equal>(String(), <type-type-of> expr);
+            res' := <desugar-compile-plus(|varref)> expr
+            
+            
+    desugar-compile-plus(|varname): OpExp(OpPlus(), a, b) ->
+        <concat> [plusa, [plusb]] 
+        where
+            plusa := <desugar-compile-plus(|varname)> a;
+            plusb := DatasetSetVar(DatasetRef(varname),
+                      OpExp(OpPlus(), DatasetRef(varname), b))
+    
+    
+    desugar-compile-plus(|varname): DatasetRef(x) -> []
+        where <equal> (x, varname)
+        
+        

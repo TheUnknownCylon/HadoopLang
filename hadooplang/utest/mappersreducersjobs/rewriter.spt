@@ -1,0 +1,77 @@
+module expressions
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module testjobchains
+
+]]
+
+test normalrewriter [[
+    rewriter x String input {
+        return input;
+    }
+]]
+
+test normalrewriter_no_input [[
+    rewriter x String input {
+    }
+]] parse fails
+
+test normalrewriter_args1 [[
+    rewriter x String input, String input2 {
+        return input2;
+    }
+]] 0 errors
+
+test normalrewriter_args1 [[
+    rewriter x String input, String input2, Number input3 {
+        return input3;
+    }
+]] 0 errors
+
+
+test normalrewriter_args_unused [[
+    rewriter x String input, String input2, Number input3 {
+        return 1;
+    }
+]] 3 warnings
+
+
+test normalrewriter_args_unused [[
+    rewriter x String input {
+        return rewrite input with oops;
+    }
+]] 1 errors
+
+/**
+ * Several tests here: Input type is tested,
+ * for rewriters, return type is tested.
+ * 
+ * Calling a rewriter
+ *
+ * no errors and warnings are to be expected
+ */
+test rewritestatement [[
+    rewriter y Number a1, Number a2 {
+        return a1 + a2;
+    }
+    
+    rewriter x Number a {
+        x := 0;
+        x  = a;
+        x  = rewrite x with y, 3;
+        
+        return x;
+    }
+]]
+
+test rewritestatement [[
+    rewriter y Number a1, Number a2 {
+        return a1 + a2;
+    }
+    
+    rewriter x Number a {
+        return rewrite a with y, 3;
+    }
+]]

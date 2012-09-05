@@ -1,0 +1,27 @@
+module hdplib
+
+/**  
+ * In this file some Hadoop Language pre-defined rewriters are made
+ * available.
+ */
+    /**
+     * Split a string at places where the delimeter occurs.
+     * To increase performance, a dataset list is returned.
+     */
+    rewriter tokenize String text, String delimeter 
+        alias org.hdplib.StringLib.tokenize
+        returns Iterator(String)
+    
+    /**
+     * Returns the input string in lowercase
+     */
+    rewriter lowercase String text
+        alias org.hdplib.StringLib.lowercase
+        returns String
+        
+    /**
+     * Returns the input string in uppercase
+     */
+    rewriter uppercase String text
+        alias org.hdplib.StringLib.uppercase
+        returns String

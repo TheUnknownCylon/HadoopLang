@@ -1,0 +1,125 @@
+module trans/codegen/statements
+
+imports
+  include/Hadooplang
+  lib/editor-common.generated
+  
+  trans/codegen/compiler
+  trans/codegen/expressions
+  trans/codegen/types
+  trans/types/typeof
+
+signature constructors
+    ForloopSetHadoop : vardef * expr * block -> ForloopSetHadoop
+
+/**
+ * Statements to java
+ */
+rules
+    name: e -> e
+    
+    to-java: loop(l)      -> <to-java> l
+    to-java: loopblock(b) -> <to-java> b
+
+    to-java: write(refKey, refValue) -> $[
+        
+        [initcodeK]
+        [initcodeV]
+        try { context.write([refKey'], [refValue']); }
+        catch (IOException e) {e.printStackTrace();}
+        catch (InterruptedException e) {e.printStackTrace();}
+        ]
+      where (refKey', initcodeK)    := <type-java-to-hadoop> refKey
+      where (refValue', initcodeV)  := <type-java-to-hadoop> refValue 
+                        
+
+    to-java: Block( statements ) -> $[{[<to-java> statements]}] 
+    to-java: BlockMR(statements) -> $[[<to-java> statements]]
+    to-java: BlockReturn(statements, return) ->
+        $[[javablock]
+        [javareturn]]
+      where javablock := <to-java> statements
+      where javareturn := $[return [<to-java> return];]
+    
+    
+
+/**
+ * If/else statements
+ */
+rules
+    to-java: If(expr, blockif, None()) -> javacode
+      where javacode := $[
+        if([<to-java> expr]) {
+            [<to-java> blockif]
+        }
+    ]
+
+    to-java: If(expr, blockif, Some(IfElse(blockelse))) -> javacode
+      where javacode := $[
+        if([<to-java> expr]) {
+            [<to-java> blockif]
+        } else {
+            [<to-java> blockelse]
+        }
+    ]
+
+
+
+/**
+ * Lists
+ */
+rules
+    to-java: ListAddItem(listref, expr) -> $[[<to-java> listref].add([<to-java> expr]);
+    ] 
+    
+    // to-java: ListDictSetItem(DictAccess(ref, index), value) -> $[[<to-java> ref].put([<to-java>] index, [<to-java>] value);
+    // ]
+    to-java: ListDictSetItem(DictAccess(ref, i), value) -> $[
+        [<to-java> ref].put([<to-java> i], [<to-java> value]);
+    ]
+    
+/**
+ * Loop statements
+ */
+rules
+    to-java: ForloopSet(vardef, expr, block) -> <to-java> ForloopSetHadoop(vardef, expr, block)
+      where <is-dataset> <type-of> expr
+    
+    to-java: ForloopSetHadoop(vardef, expr, block) ->
+        $[
+          for([ittype'] [name'] : [expr']) {
+              /* Convert hadoop type to java type */
+              [convert-to-java]
+              
+              [block']
+          }
+        ]
+      where
+          name  := vardef;
+          name' := $[[name]_];
+          expr' := <to-java> expr;
+          block' := [<to-java> block];
+          ittype' := <type'-to-hadoop-input> <innertype> <type> <type-of> expr;
+          ittype := <type'-to-java> <innertype> <type> <type-of> expr;
+          convert-to-java := <type-hadoop-to-java> (TEMPVAR(<innertype> <type> <type-of> expr, name'), name)
+          
+          
+    to-java: ForloopDict(key, vardef, expr, block) -> 
+        $[
+          for (Map.Entry<[keytype], [valuetype]> entry : [set].entrySet()) {
+            [keytype] [keyname] = entry.getKey();
+			[valuetype] [valuename] = entry.getValue();
+            [block']
+		  }
+        ]
+      where
+          block' := <to-java> block;
+
+          keytype := <type'-to-java> String();
+          ForKeyDef(keyname) :=  key;
+
+          valuetype := <type'-to-java> <innertype> <type> <type-of> expr;
+          valuename := vardef; 
+
+          set := <to-java> expr
+          

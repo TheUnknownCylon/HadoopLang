@@ -1,0 +1,6 @@
+module trans/lib/string
+
+rules
+  add-space: str -> <concat-strings> [str, " "]
+  add-comma: str -> <concat-strings> [str, ","]
+  add-colon: str -> <concat-strings> [str, ":"] 

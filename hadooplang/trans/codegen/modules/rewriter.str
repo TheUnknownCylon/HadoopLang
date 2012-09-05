@@ -1,0 +1,82 @@
+module trans/codegen/modules/rewriter
+
+imports
+  include/Hadooplang
+  trans/codegen/compiler
+  trans/types/typeof
+  
+  trans/codegen/types
+  trans/codegen/statements
+  trans/codegen/expressions
+  
+  trans/codegen/names
+  
+  
+rules
+  force-hadooploopset(|mainparam) = alltd(force-hadooploopset'(|mainparam))
+  force-hadooploopset'(|mainparam): ForloopSet(v, set, block) -> ForloopSetHadoop(v, set, block)
+    where
+        DatasetRef(setname) := set;
+        <equal>(mainparam, setname)
+        
+
+rules
+    to-java: r@RewriterAlias(_, _, _, _, _) -> None()
+    
+
+rules
+  to-java: Parameter(t, name) -> $[[<type'-to-java> <type-of> t] [name]]
+  
+  /**
+   * Rewriter to java, note that we can take exactly one iterator of type Hadoop,
+   *  write for each paramater with an Iterator a rewrite method.
+   *
+   * i.e.
+   *
+   * It is possible to have an iterator at the place of the write
+   * statement. In order to prevent memory problems, rewrite the AST
+   * so the iterator writes are done in an iterator traversal.
+   */
+rules
+  to-java: Parameter(t, name) -> $[[<type'-to-java> <type-of> t] [name]]
+  
+  to-java: r@Rewriter(name', mainparam, params, b@BlockReturn(commands, return)) ->
+    (JavaFile("hdp.rewriters", $[[name]], content), rewriters)
+
+    where
+        name := <name-of> r;
+        RewriterParameter(paramtype, paramname) := mainparam;
+    
+        returntype := <type'-to-java> <type> <type-of> r;
+        maintypeJava := <type'-to-java><type-of> paramtype;
+        args := <concat-strings> <map(add-pre-comma)> <map(to-java)> params;
+        rewriters := <nub> <collect-all(is-rewrite, conc)> r;
+        
+        (
+            <is-type-iterator> <type-type-of> mainparam;
+            maintypeHadoop := <type'-to-hadoop> <type-of> paramtype;
+            statementswithhadooptype := <to-java> <force-hadooploopset(|paramname)> b;
+            withhadoopmethod := $[
+		        public static [returntype] withHadoop([maintypeHadoop] [paramname] [args]) {
+		            [statementswithhadooptype]
+		        }
+		    ]
+            <+
+            withhadoopmethod := $[]
+        )        
+
+
+
+
+  with content := $[
+    public class [name] {
+        public static [returntype] withJava([maintypeJava] [paramname] [args]) {
+            [<to-java> b]
+        }
+        
+        [withhadoopmethod]
+    }]
+    
+    
+
+  

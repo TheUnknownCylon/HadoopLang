@@ -1,0 +1,26 @@
+module Hadooplang-Outliner
+
+
+outliner
+  
+  Start.Module
+  Mapper._
+  Reducer._
+  Rewriter._
+  
+  _.If
+  _.ForloopSet
+  _.ForloopDict
+  
+  
+  _.write
+  _.return
+
+  
+  RootStatement._
+  
+  // This file can be used for custom outliner rules.
+  //
+  // See the imported file for a brief introduction and examples.
+  
+  //imports Hadooplang-Outliner.generated

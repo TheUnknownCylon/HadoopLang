@@ -1,0 +1,126 @@
+module trans/codegen/expressions
+
+imports
+  include/Hadooplang
+  lib/editor-common.generated
+  
+  trans/index
+  trans/lib/lists
+  trans/types/typeof
+  trans/types/operators
+  
+  trans/codegen/compiler
+  trans/codegen/types
+  trans/codegen/vars
+  trans/codegen/names
+
+
+rules
+    to-java: String(v) -> $[[v]]
+    to-java: Num(v)    -> $[[v]d]
+    to-java: True()    -> $[true]
+    to-java: False()   -> $[false]
+        
+    to-java: List(type, values) -> javacode
+        where
+            javatype := <type'-to-java> <type-of> type;
+            valueslist' := <map(to-java)> values;
+            valueslist  := <concat-strings> <add-in-between(|",")> valueslist';
+            (
+                <equal>(<length> valueslist', 0);
+                initiallist := $[]
+            <+
+                initiallist := $[Arrays.asList([valueslist])]
+            )
+        where
+            javacode := $[new ArrayList<[javatype]>([initiallist]);
+            ]
+
+    add-dictadd: DictItem(key, value) -> $[[<to-java> key], [<to-java> value]
+    ]
+
+    //Dict with initial values --> Java error when there are no initial values, therefore there is a separate 
+    // constructor for a new ArrayList without initial values
+    to-java: Dict(type, values) -> javacode
+        where
+            not(<equal>(<length> values, 0));
+            javatype := <type'-to-java> <type-of> type;
+            valueslist' := <map(add-dictadd)> values;
+            immutablevalues  := <concat-strings> <add-in-between(|",")> valueslist'
+        where
+            javacode := $[
+            /* TODO! Not very efficient, but allows acces to (non) final objects in a one-liner!
+            **May** be fixed by desugaring expressions.*/
+            Maps.newHashMap(ImmutableMap.of([immutablevalues]));
+            ]
+    
+    //Dict without initial values
+    to-java: Dict(type, values) -> javacode
+        where
+            <equal>(<length> values, 0);
+            javatype := <type'-to-java> <type-of> type
+        where
+            javacode := $[new HashMap<String, [javatype]>();
+            ]
+
+
+rules
+    add-pre-comma: str -> $[, [str]]
+    
+    to-java: Rewrite(set, RewriteRef(rewriter'), args') -> javacode
+        where
+            RewriterAlias(_, _, _, class, _) := <get-node> rewriter';
+            class' := <add-in-between(|".")> class;
+            
+            argset := <to-java> set;
+            (
+                Params(args) := args';
+                otherargs := <concat-strings> <map(add-pre-comma)> <map(to-java)> args
+            <+
+                otherargs := $[]
+           )
+       where    
+            javacode := $[[class']([argset] [otherargs])]
+            
+    
+    to-java: Rewrite(set, RewriteRef(rewriter), args') -> $[[rewriterclass].[rewritermethod]([argset] [otherargs])]
+        where
+            rewriterclass := <name-of> <get-node> rewriter;
+            (
+                <is-dataset> <type-of> set;
+                rewritermethod := $[withHadoop] 
+            <+
+                rewritermethod := $[withJava]
+            );
+            argset := <to-java> set;
+            (
+                Params(args) := args';
+                otherargs := <concat-strings> <map(add-pre-comma)> <map(to-java)> args
+            <+
+                otherargs := $[]
+           )
+                
+rules
+    to-java: DictAccess(ref, index) -> $[[<to-java> ref].get([<to-java> index])]
+    
+    to-java: Brackets(t)    -> $[([<to-java> t])]
+    
+    to-java: OpExp(OpPlus(), t1, t2)          -> $[([<to-java> t1] + [<to-java> t2])]
+    to-java: OpExp(OpTimes(), t1, t2)         -> $[([<to-java> t1] * [<to-java> t2])]
+    to-java: OpExp(OpMin(), t1, t2)           -> $[([<to-java> t1] - [<to-java> t2])]
+    to-java: OpExp(OpDivide(), t1, t2)        -> $[([<to-java> t1] / [<to-java> t2])]
+    to-java: OpExp(OpModulo(), t1, t2)        -> $[([<to-java> t1] % [<to-java> t2])]
+    to-java: OpExp(OpAnd(), t1, t2)           -> $[([<to-java> t1] && [<to-java> t2])]
+    to-java: OpExp(OpOr(), t1, t2)            -> $[([<to-java> t1] || [<to-java> t2])]
+    
+    to-java: OpExp(OpGreaterThan(), t1, t2)   -> $[([<to-java> t1]) > ([<to-java> t2])]
+    to-java: OpExp(OpSmallerThan(), t1, t2)   -> $[([<to-java> t1]) < ([<to-java> t2])]
+    to-java: OpExp(OpEqSmallerThan(), t1, t2) -> $[([<to-java> t1]) >= ([<to-java> t2])]
+    to-java: OpExp(OpEqGreaterThan(), t1, t2) -> $[([<to-java> t1]) <= ([<to-java> t2])]
+    
+    to-java: OpExp(OpEquals(), t1, t2)        -> $[([<to-java> t1]) == ([<to-java> t2])]
+        where <equal>(<type-type-of> t1, Num()) <+ <equal>(<type-type-of> t1, Bool()) 
+
+    to-java: OpExp(OpEquals(), t1, t2)        -> $[([<to-java> t1]).equals(([<to-java> t2]))]
+        where <equal>(<type-type-of> t1, String())  
+        

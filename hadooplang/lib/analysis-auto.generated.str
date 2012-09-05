@@ -1,0 +1,307 @@
+module lib/analysis-auto.generated
+
+signature
+  constructors
+    Datavar  : Namespace
+    Import   : Namespace
+    Module   : Namespace
+    Dataset  : Namespace
+    Mapper   : Namespace
+    Reducer  : Namespace
+    Rewriter : Namespace
+    Datavar  : Namespace
+
+
+imports
+  lib/editor-common.generated
+  include/Hadooplang
+
+
+rules
+
+  nam-annotate-names(|def-path):
+    DatasetRef(e_170707) -> DatasetRef(<nam-annotate-use(|Datavar())> e_170707)
+
+  nam-get-scope-types :
+    Module(_, _, _) -> [ Dataset()
+                       , Datavar()
+                       , Import()
+                       , Rewriter()
+                       , Mapper()
+                       , Reducer()
+                       ]
+
+  nam-get-scope-types :
+    Block(_) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    BlockMR(_) -> [ Dataset()
+                  , Datavar()
+                  , Mapper()
+                  ]
+
+  nam-get-scope-types :
+    BlockReturn(_, _) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    Mapper(_, _) -> [ Dataset()
+                    , Datavar()
+                    , Rewriter()
+                    , Mapper()
+                    , Reducer()
+                    ]
+
+  nam-get-scope-types :
+    Reducer(_, _) -> [ Dataset()
+                     , Datavar()
+                     , Rewriter()
+                     , Mapper()
+                     , Reducer()
+                     ]
+
+  nam-get-scope-types :
+    MapInner(_, _, _) -> [ Dataset()
+                         , Datavar()
+                         , Rewriter()
+                         , Mapper()
+                         , Reducer()
+                         ]
+
+  nam-get-scope-types :
+    RedInner(_, _, _) -> [ Dataset()
+                         , Datavar()
+                         , Rewriter()
+                         , Mapper()
+                         , Reducer()
+                         ]
+
+  nam-get-scope-types :
+    Rewriter(_, _, _, _) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    RewriterAlias(_, _, _, _, _) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    loop(_) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    loopblock(_) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    ForloopSet(_, _, _) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    ForloopDict(_, _, _, _) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    ForloopSet(_, _, _, _) -> [Dataset(), Datavar()]
+
+  nam-get-scope-types :
+    ForloopDict(_, _, _, _, _) -> [Dataset(), Datavar()]
+
+  nam-get-definition-key :
+    Module(x, _, _) -> x
+
+  nam-get-definition :
+    Module(x, _, _) -> <nam-get-def(|Module())> x
+
+  nam-get-definition-key :
+    Import(x) -> x
+
+  nam-get-definition :
+    Import(x) -> <nam-get-def(|Import())> x
+
+  nam-get-definition-key :
+    DatasetDef(x, _) -> x
+
+  nam-get-definition :
+    DatasetDef(x, _) -> <nam-get-def(|Dataset())> x
+
+  nam-get-definition-key :
+    RewriterParameter(_, x) -> x
+
+  nam-get-definition :
+    RewriterParameter(_, x) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    Parameter(_, x) -> x
+
+  nam-get-definition :
+    Parameter(_, x) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    ReduceIterator(_, x) -> x
+
+  nam-get-definition :
+    ReduceIterator(_, x) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    Mapper(x, _) -> x
+
+  nam-get-definition :
+    Mapper(x, _) -> <nam-get-def(|Mapper())> x
+
+  nam-get-definition-key :
+    Reducer(x, _) -> x
+
+  nam-get-definition :
+    Reducer(x, _) -> <nam-get-def(|Reducer())> x
+
+  nam-get-definition-key :
+    Rewriter(x, _, _, _) -> x
+
+  nam-get-definition :
+    Rewriter(x, _, _, _) -> <nam-get-def(|Rewriter())> x
+
+  nam-get-definition-key :
+    RewriterAlias(x, _, _, _, _) -> x
+
+  nam-get-definition :
+    RewriterAlias(x, _, _, _, _) -> <nam-get-def(|Rewriter())> x
+
+  nam-get-definition-key :
+    MapReduceKey(_, x) -> x
+
+  nam-get-definition :
+    MapReduceKey(_, x) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    DatasetDefStatement(x, _) -> x
+
+  nam-get-definition :
+    DatasetDefStatement(x, _) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    ForloopSet(x, _, _) -> x
+
+  nam-get-definition :
+    ForloopSet(x, _, _) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    ForloopDict(_, x, _, _) -> x
+
+  nam-get-definition :
+    ForloopDict(_, x, _, _) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    ForloopSet(x, _, _, _) -> x
+
+  nam-get-definition :
+    ForloopSet(x, _, _, _) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    ForloopDict(_, x, _, _, _) -> x
+
+  nam-get-definition :
+    ForloopDict(_, x, _, _, _) -> <nam-get-def(|Datavar())> x
+
+  nam-get-definition-key :
+    ForKeyDef(x) -> x
+
+  nam-get-definition :
+    ForKeyDef(x) -> <nam-get-def(|Datavar())> x
+
+  nam-annotate-names(|def-path):
+    Module(b_169720, c_169720, d_169720) -> Module(b_169720{def-path}, c_169720, d_169720)
+
+  nam-annotate-names(|def-path):
+    Import(a_169720) -> Import(a_169720{def-path})
+
+  nam-annotate-names(|def-path):
+    OneImportMapper(y_169719, z_169719) -> OneImportMapper(
+                                             <nam-annotate-use(|Module())> y_169719
+                                           , z_169719
+                                           )
+
+  nam-annotate-names(|def-path):
+    OneImportReducer(w_169719, x_169719) -> OneImportReducer(
+                                              <nam-annotate-use(|Module())> w_169719
+                                            , x_169719
+                                            )
+
+  nam-annotate-names(|def-path):
+    OneImportRewriter(u_169719, v_169719) -> OneImportRewriter(
+                                               <nam-annotate-use(|Module())> u_169719
+                                             , v_169719
+                                             )
+
+  nam-annotate-names(|def-path):
+    ReducerRef(t_169719) -> ReducerRef(<nam-annotate-use(|Reducer())> t_169719)
+
+  nam-annotate-names(|def-path):
+    RewriteRef(s_169719) -> RewriteRef(<nam-annotate-use(|Rewriter())> s_169719)
+
+  nam-annotate-names(|def-path):
+    MapperRef(r_169719) -> MapperRef(<nam-annotate-use(|Mapper())> r_169719)
+
+  nam-annotate-names(|def-path):
+    DatasetDef(m_169719, n_169719) -> DatasetDef(m_169719{def-path}, n_169719)
+
+  nam-annotate-names(|def-path):
+    Store(l_169719) -> Store(<nam-annotate-use(|Dataset())> l_169719)
+
+  nam-annotate-names(|def-path):
+    MRInputSet(d_169719) -> MRInputSet(<nam-annotate-use(|Dataset())> d_169719)
+
+  nam-annotate-names(|def-path):
+    RewriterParameter(v_169718, w_169718) -> RewriterParameter(v_169718, w_169718{def-path})
+
+  nam-annotate-names(|def-path):
+    Parameter(t_169718, u_169718) -> Parameter(t_169718, u_169718{def-path})
+
+  nam-annotate-names(|def-path):
+    Parameter(r_169718, s_169718) -> Parameter(r_169718, s_169718{def-path})
+
+  nam-annotate-names(|def-path):
+    ReduceIterator(p_169718, q_169718) -> ReduceIterator(p_169718, q_169718{def-path})
+
+  nam-annotate-names(|def-path):
+    Mapper(n_169718, o_169718) -> Mapper(n_169718{def-path}, o_169718)
+
+  nam-annotate-names(|def-path):
+    Reducer(l_169718, m_169718) -> Reducer(l_169718{def-path}, m_169718)
+
+  nam-annotate-names(|def-path):
+    Rewriter(b_169718, c_169718, d_169718, e_169718) -> Rewriter(b_169718{def-path}, c_169718, d_169718, e_169718)
+
+  nam-annotate-names(|def-path):
+    RewriterAlias(w_169717, x_169717, y_169717, z_169717, a_169718) -> RewriterAlias(
+                                                                         w_169717{def-path}
+                                                                       , x_169717
+                                                                       , y_169717
+                                                                       , z_169717
+                                                                       , a_169718
+                                                                       )
+
+  nam-annotate-names(|def-path):
+    MapReduceKey(u_169717, v_169717) -> MapReduceKey(u_169717, v_169717{def-path})
+
+  nam-annotate-names(|def-path):
+    DatasetDefStatement(s_169717, t_169717) -> DatasetDefStatement(s_169717{def-path}, t_169717)
+
+  nam-annotate-names(|def-path):
+    ForloopSet(h_169717, i_169717, j_169717) -> ForloopSet(h_169717{def-path}, i_169717, j_169717)
+
+  nam-annotate-names(|def-path):
+    ForloopDict(d_169717, e_169717, f_169717, g_169717) -> ForloopDict(d_169717, e_169717{def-path}, f_169717, g_169717)
+
+  nam-annotate-names(|def-path):
+    ForloopSet(z_169716, a_169717, b_169717, c_169717) -> ForloopSet(z_169716{def-path}, a_169717, b_169717, c_169717)
+
+  nam-annotate-names(|def-path):
+    ForloopDict(u_169716, v_169716, w_169716, x_169716, y_169716) -> ForloopDict(
+                                                                       u_169716
+                                                                     , v_169716{def-path}
+                                                                     , w_169716
+                                                                     , x_169716
+                                                                     , y_169716
+                                                                     )
+
+  nam-annotate-names(|def-path):
+    ForKeyDef(t_169716) -> ForKeyDef(t_169716{def-path})
+
+  nam-get-def(|n) =
+    fail
+
+  nam-annotate-use(|n) =
+    fail

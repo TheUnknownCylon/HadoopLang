@@ -1,0 +1,106 @@
+module trans/codegen/output
+
+imports
+  include/Hadooplang
+  lib/editor-common.generated
+  
+  trans/codegen/compiler
+
+rules
+  to-file(|builddir, javafiles): JavaFile(package, classname, content) -> filepath
+    where
+    	content' := <concat-strings> [<generate-header(|javafiles)> package, content];
+        
+        dirname  := <create-packagedir(|builddir)> package;
+        filepath := $[[dirname]/[classname].java];
+        
+        f := <fopen>(filepath, "w");
+        <fputs> (content', f);
+        <fclose> f;
+        try(<refresh-workspace-file> filepath);
+        <compile-log(|1)> $[output file: [filepath]]
+        
+  to-file(|builddir, javafiles): n -> None()
+        
+rules
+  generate-header(|javafiles): package -> $[
+  	package [package];
+  	
+  	import java.io.IOException;
+  	
+  	import java.util.List;
+    import java.util.HashMap;
+    import java.util.ArrayList;
+  	import java.lang.Iterable;
+  	import java.util.Arrays;
+
+  	import org.hadooplanghelpers.Deletedir;
+  	import org.hadooplanghelpers.ArrayWritableHDP;
+ 	import org.hadooplanghelpers.ArrayListWritable;
+ 	import org.hadooplanghelpers.MapWritableHdp;
+
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.io.DoubleWritable;
+	import org.apache.hadoop.io.BooleanWritable;
+
+    import org.apache.hadoop.io.Writable;
+	import org.apache.hadoop.io.LongWritable;
+	import org.apache.hadoop.io.IntWritable;
+
+    import org.apache.hadoop.io.ArrayWritable; 
+    import org.apache.hadoop.io.MapWritable;
+
+	import org.apache.hadoop.mapreduce.Mapper;
+	import org.apache.hadoop.mapreduce.Reducer;
+	
+	import org.apache.hadoop.fs.Path;
+	import org.apache.hadoop.conf.Configuration;
+	import org.apache.hadoop.mapreduce.Job;
+	import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+	import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+    import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+    import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+    
+    import com.google.common.collect.ImmutableMap;
+    import com.google.common.collect.Maps;
+
+	[hdpimports]
+  ]
+    where
+        javafiles' := <filter(is-javafile)> javafiles;
+        hdpimports := <concat-strings> <map(fileimportcode)> javafiles'
+  
+  is-javafile: x@JavaFile(_, _, _) -> x
+  fileimportcode: x@JavaFile(package, classname, _) -> $[
+      import [package].[classname];]
+  
+  
+  create-packagedir(|root): package -> dirname
+    where
+        dirname' := <string-replace(|".", "/")> package;
+        dirname  := <concat-strings> [root, $[/], dirname'];
+        dirparts := <string-tokenize(|['/'])> dirname;
+        (   <string-starts-with(|"/")> root;
+            <mkdir_recursive> dirparts
+        <+
+            <mkdir_recursive(|".")> dirparts
+        )
+        
+        
+        
+
+rules  
+  /**
+   * Create a directory from an list.
+   *   usage: <mkdir_recursive> ["tmp", "test", "a"]
+   *   result, a new directory /tmp/test/a
+   */
+  mkdir_recursive: dirlist -> <mkdir_recursive(|$[])> dirlist
+  
+  mkdir_recursive(|prelist): [] -> None()
+  mkdir_recursive(|prelist): [c|rest] -> <mkdir_recursive(|pre)> rest
+    where
+    	pre := <concat-strings> [prelist, $[/], c];
+    	try(<mkdir> pre)
+    	
+  

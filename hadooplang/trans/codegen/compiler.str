@@ -1,0 +1,54 @@
+module trans/codegen/compiler
+
+
+imports
+  libstratego-lib
+  libstratego-gpp
+  libstratego-aterm
+  include/Hadooplang
+  lib/editor-common.generated
+  lib/compilation-library.generated
+  
+  trans/types/typeof
+
+  lib/index-library.generated
+
+
+signature constructors
+    JavaFile: package * filename * content -> JavaFile
+    JavaFile: package * filename * throws * content -> JavaFile
+    NoFile: content -> JavaFile
+    
+rules
+  
+  compile-log(|depth): query -> <debug(!indent)> query
+    where 
+        (<equal>(depth, 0); indent := "") <+
+        (<equal>(depth, 1); indent := "  ") <+
+        (<equal>(depth, 2); indent := "    ") <+
+        (<equal>(depth, 3); indent := "      ") <+
+        indent := "        "
+        
+  
+  to-java: [] -> []
+  to-java: [x|xs] -> <flatten-list> [<to-java> x | <to-java> xs]
+    
+
+rules
+  // forloop-data: l@ForloopSet(_, x, _) -> l
+  //   //TODO: Where x is type of dataset
+  //   
+  // get-all-forloopsets: block -> foreaches
+  //   where foreaches := <collect-all(forloop-data, conc)> block
+  //   
+  // to-java-forloopblock: ForloopSet(_, _, b) -> <to-java> b
+  // to-java-forloopblock: ForloopDict(_, _, _, b) -> <to-java> b
+  
+  
+  to-java: x -> $[
+      /* TODO */]
+    where <debug(!"TODO: ")> x
+    
+  
+  
+  //to-java: ForloopSet(keydef, dataset, commands) -> []

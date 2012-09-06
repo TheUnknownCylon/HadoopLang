@@ -20,7 +20,7 @@ imports
   
   trans/hover
    
-  trans/codegen/generate    //disable for faster spoofax compiling, enable to support java compiling
+  //trans/codegen/generate    //disable for faster spoofax compiling, enable to support java compiling
 
 rules // Analysis
   

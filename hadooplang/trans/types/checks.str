@@ -197,6 +197,25 @@ rules
             <put-node> CachedError([name], r);
             not(<equal>((), errors))
             
+rules
+    constraint-error: MapInner(key, value, _) -> [(key, $[A mapper can never have an iterator as input key type!]),
+                                                  (value, $[A mapper can never have an iterator as input value type!])]
+        where <is-type-iterator> <type-type-of> key
+        where <is-type-iterator> <type-type-of> value
+        
+    constraint-error: MapInner(key, _, _) -> (key, $[A mapper can never have an iterator as input key type!])
+        where <is-type-iterator> <type-type-of> key
+        
+    constraint-error: MapInner(_, value, _) -> (value, $[A mapper can never have an iterator as input value type!])
+        where <is-type-iterator> <type-type-of> value
+
+
+rules
+    constraint-error: RedInner(k, _, _) -> (k, $[A reducer can never have an iterator as input key type!])
+        where <is-type-iterator> <type-type-of> k
+    
+    constraint-error: r@ReduceIterator(type, _) -> (r, $[An iterator is expected, got [<type-name> <type-of> type]])
+        where not(<is-type-iterator> <type-of> type)
 
 
 /* *****************
@@ -248,16 +267,6 @@ rules
                 errors := (v, $[Write statements can not have iterators as value.])
             )
 
-    constraint-error: r@Mapper(name, MapInner(key, value, block)) -> (value, $[A mapper can never have an iterator as input!])
-        where <is-type-iterator> <type-type-of> value
-        
-    constraint-error: r@Mapper(name, RedInner(key, value, block)) -> (value, $[A mapper can never have an iterator as input!])
-        where <is-type-iterator> <type-type-of> value
-
-
-rules
-    constraint-error: r@ReduceIterator(type, _) -> (r, $[An iterator is expected, got [<type-name> <type-of> type]])
-        where not(<is-type-iterator> <type-of> type)
 
 
 /**

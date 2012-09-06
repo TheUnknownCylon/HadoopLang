@@ -271,8 +271,10 @@ Several examples can be found in the examples directory (which is ./utest/_demoa
 
 Known bugs
 ----------
-As far as I know, there are only a few bugs at the moment. On a save operation, the analysis crashes. All included .hdp files are required to be opened in the editor, and resolving objects to other files do not work.
+As far as I know, there are only a few bugs at the moment. On a save operation, the analysis crashes. All included .hdp modules are required to be opened in the editor, and resolving objects to other files do not work.
 Also some tests are failing (I will have to fix those before handing in the assignment). 
+
+There seems also to be a bug with Spoofax. When the HadoopLang syntax is altered, make sure you also alter both the ``/syntax/Hadooplang.sdf`` and ``/systax/grammar/Expressions.sdf``. Adding and removing a space is fine. My guess is that something goes wrong with caching compilations.
 
 Other than that, I am not aware of other bugs. Unfortunately there is no way to be sure. If you find one, please contact me at ``TheUnknownCylon``@GitHub or ``TheUC``@freenode.
 

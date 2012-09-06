@@ -1,0 +1,49 @@
+module trans/types/sidechecks
+
+imports
+    trans/types/typeof
+
+/* *********************************
+ * Helper method
+ * Validates two vars for type correctness.
+ * One type, or a list of matching types should be returned. The matching type should
+ *   be one of the selected types.
+ *
+ * For each incorrect type, a constraint-error output is returned.
+ * 
+ * !!! It FAILS when both sides are correct!!!
+ */
+rules
+    validate_both_sides(|comptype): (x, y) -> errors
+        where
+            not(<length> comptype);
+            errors := <validate_both_sides(|[comptype])> (x, y);
+            not(<equal> (<length> errors, 0))
+            
+    
+    
+    validate_both_sides(|comptypes): (x, y) -> errors
+        where
+            <length> comptypes;
+            x' := <type-type-of> x; not(<fetch(?x')> comptypes);
+            y' := <type-type-of> y; not(<fetch(?y')> comptypes);
+            <debug(!" C ")> (x', y');
+
+            errors := [
+                (x, $[Wrong type; expected [<type-name> comptypes] got [<type-of-name> x].]),
+                (y, $[Wrong type; expected [<type-name> comptypes] got [<type-of-name> y].])
+            ]
+                        
+    validate_both_sides(|comptypes): (x, _) -> [errors]
+        where
+            <length> comptypes;
+            x' := <type-type-of> x; not(<fetch(?x')> comptypes);
+            errors := (x, $[Wrong type; expected [<type-name> comptypes], got [<type-of-name> x].])
+            
+    validate_both_sides(|comptypes): (_, y) -> [errors]
+        where
+            <length> comptypes;
+            y' := <type-type-of> y; not(<fetch(?y')> comptypes);
+            errors := (y, $[Wrong type; expected [<type-name> comptypes], got [<type-of-name> y].])
+    
+    

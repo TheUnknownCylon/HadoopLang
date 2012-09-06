@@ -76,9 +76,9 @@ test eq2 [[i := n == s;]] 1 errors
 test eq3 [[i := s == s;]] 0 errors
 test eq4 [[i := b == s;]] 1 errors
 test eq5 [[i := b == b;]] 0 errors
-test eq6 [[i := l == l;]] 1 errors
-test eq7 [[i := l == l;]] 1 errors
-test eq7 [[i := d == d;]] 1 errors
+test eq6 [[i := l == l;]] 2 errors
+test eq7 [[i := l == l;]] 2 errors
+test eq7 [[i := d == d;]] 2 errors
 
 //test the return type:
 test plusres1 [[mylist := Number[1];]] 0 errors

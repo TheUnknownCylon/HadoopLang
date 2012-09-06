@@ -3,6 +3,7 @@ module trans/types/operators
 imports
     include/Hadooplang
     trans/types/typeof
+    trans/types/sidechecks
 
 signature constructors
     OpExp           : OpType * a * b -> OpExp
@@ -72,6 +73,7 @@ rules
 
     type-of-op: (OpEquals(), a, b) -> Bool()
         where <equal> (<type-of> a, <type-of> b)
+        where not(<validate_both_sides(|[Num(), String(), Bool()])>(a, b)) //where are no side-errors
 
 
 /**

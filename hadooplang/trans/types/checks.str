@@ -13,6 +13,7 @@ imports
   trans/types/operators
   trans/types/operators
 
+  trans/types/sidechecks
 
 rules
     typecheck(|typetocheckfor): vartocheck -> <equal>(<type> <type-of> vartocheck, typetocheckfor)
@@ -39,6 +40,7 @@ rules
             )
     
     constraint-error-op: (OpPlus(), x, y)   -> <validate_both_sides(|[Num(), String()])>(x, y)
+        where <debug(!"X en y: ")> (x,y)
     
     constraint-error-op: (OpTimes(), x, y)  -> <validate_both_sides(|Num())>(x, y)
     constraint-error-op: (OpMin(), x , y)   -> <validate_both_sides(|Num())>(x, y)
@@ -57,7 +59,7 @@ rules
     where not(<equal>(<type-of> x, <type-of> y))
  
     constraint-error-op: e@(OpEquals(), x, y)     -> <validate_both_sides(|[Num(), String(), Bool()])>(x, y)
-
+    
 /* *****
  * Datasetdef for root statements
  */
@@ -362,43 +364,3 @@ rules
     ])
 
 
-
-
-
-/* *********************************
- * Helper method
- * Validates two vars for type correctness.
- * One type, or a list of matching types should be returned. The matching type should
- *   be one of the selected types.
- * For each incorrect type, a constraint-error output is returned. 
- */
-rules
-    validate_both_sides(|comptype): (x, y) -> <validate_both_sides(|[comptype])> (x, y)
-        where not(<length> comptype)
-    
-    
-    validate_both_sides(|comptypes): (x, y) -> errors
-        where
-            <length> comptypes;
-            x' := <type-type-of> x; not(<fetch(?x')> comptypes);
-            y' := <type-type-of> y; not(<fetch(?y')> comptypes);
-
-            errors := [
-                (x, $[Wrong type; expected [<type-name> comptypes] got [<type-of-name> x].]),
-                (y, $[Wrong type; expected [<type-name> comptypes] got [<type-of-name> y].])
-            ]
-                        
-    validate_both_sides(|comptypes): (x, _) -> [errors]
-        where
-            <length> comptypes;
-            x' := <type-type-of> x; not(<fetch(?x')> comptypes);
-            errors := (x, $[Wrong type; expected [<type-name> comptypes], got [<type-of-name> x].])
-            
-    validate_both_sides(|comptypes): (_, y) -> [errors]
-        where
-            <length> comptypes;
-            y' := <type-type-of> y; not(<fetch(?y')> comptypes);
-            errors := (y, $[Wrong type; expected [<type-name> comptypes], got [<type-of-name> y].])
-    
-    
-    

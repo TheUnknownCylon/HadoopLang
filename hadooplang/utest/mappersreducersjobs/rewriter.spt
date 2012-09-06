@@ -38,9 +38,16 @@ test normalrewriter_args_unused [[
 ]] 3 warnings
 
 
-test normalrewriter_args_unused [[
+test normalrewriter_unresolved_no_error_in_input_type [[
     rewriter x String input {
         return rewrite input with oops;
+    }
+]] 1 errors
+
+
+test normalrewriter_unresolved_no_error_but_notresolved [[
+    rewriter x String input {
+        return rewrite input with oops, 1;
     }
 ]] 1 errors
 

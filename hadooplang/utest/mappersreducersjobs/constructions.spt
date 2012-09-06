@@ -87,13 +87,13 @@ test mapper_itkeyvalue [[
     }
 ]] 2 errors
 
-test mapper_itkeyvalue [[
+test reducer_itkeyvalue [[
     reducer A : Iterator(String) k : Iterator(String) v {
         write 0: 0;
     }
 ]] 1 errors
 
-test mapper_returnit [[
+test reducer_returniterator [[
     reducer A : String k : Iterator(String) v {
         write 0: v;
     }

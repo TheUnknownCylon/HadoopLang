@@ -143,6 +143,7 @@ rules
 
     constraint-error: Rewrite(resource, RewriteRef(rewriter), _) -> (resource, $[Wrong type!])
         where not(<equal>(<rewriter-main-type> <get-node> rewriter, <type><type-of> resource))
+        where <type-of> <get-node> rewriter
 
     constraint-error: r@Rewrite(_, RewriteRef(rewriter), args) -> (r, $[Wrong number of arguments is given, expected [expected] arguments, got [given].])
         where

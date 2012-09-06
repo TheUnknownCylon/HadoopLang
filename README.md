@@ -274,21 +274,21 @@ Known bugs
 As far as I know, there are only a few bugs at the moment. On a save operation, the analysis crashes. All included .hdp modules are required to be opened in the editor, and resolving objects to other files do not work.
 Also some tests are failing (I will have to fix those before handing in the assignment). 
 
-There seems also to be a bug with Spoofax. When the HadoopLang syntax is altered, make sure you also alter both the ``/syntax/Hadooplang.sdf`` and ``/systax/grammar/Expressions.sdf``. Adding and removing a space is fine. My guess is that something goes wrong with caching compilations.
+There seems also to be a bug related to Spoofax. When the HadoopLang syntax is altered, make sure you also alter both the ``/syntax/Hadooplang.sdf`` and ``/systax/grammar/Expressions.sdf``. Adding and removing a space is fine. My guess is that something goes wrong with caching compilations.
 
 Other than that, I am not aware of other bugs. Unfortunately there is no way to be sure. If you find one, please contact me at ``TheUnknownCylon``@GitHub or ``TheUC``@freenode.
 
 
 Similar Work
 ------------
-I did not do an extensive research on similar work. However you may want to have a look at PigLatin (http://pig.apache.org/). PigLatin is a query language for large datasets, which also have an interactive mode. PigLatin also uses Hadoop for data analysis.
+I did not do an extensive research on similar work. However you may want to have a look at PigLatin (http://pig.apache.org/). PigLatin is a query language for large datasets, which also has an interactive mode. PigLatin also uses Hadoop for data analysis.
 
 
 Advanced topics
 -------------------
 ###Calling external Java
 
-It is possible to call external Java methods. Note that currently no checks are done, and once using these Java methods, there is no guarantee that the application will lead to valid Javacode. _Note that the developer is informed in its IDE when creating this construction._
+It is possible to call external Java methods. Note that currently no checks are done,; once using these Java methods, there is no guarantee that the Hadooplang compaliber will produce to valid Javacode. _Note that the developer is informed in its IDE when creating this construction._
 
 Code for calling external java functions:
 
@@ -302,3 +302,14 @@ Example:
 	    alias org.hdplib.StringLib.uppercase
 	    returns String
 
+Input and output types for these methods related to the Java class types are defined in the following table. Note that interfaces should be fully implemented, or otherwise no assertions can be made of good or bad behavior. Also note that external calls get references to Java objects, not copies.
+
+    
+    HadoopLang <--> Java
+     String           String
+     Number           Double
+     Boolean          Boolean
+     List(t)          List<t>        (interface implementation)
+     Dict(t)          Map<String, t> (interface implementation)
+     Iterator(t)      Iterable<t>    (interface implementation)
+     

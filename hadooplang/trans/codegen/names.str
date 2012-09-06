@@ -10,9 +10,9 @@ imports
   lib/analysis-library-internal.generated
 
 rules
-    name-of: Mapper(name, _, _, _)-> $[Mapper[name]]
-    name-of: Reducer(name, _, _, _)-> $[Reducer[name]]
-    name-of: Rewriter(name, _, _, _)-> $[Rewriter[name]]
+    name-of: Mapper(name, _)-> $[Mapper[name]]
+    name-of: Reducer(name, _)-> $[Reducer[name]]
+    name-of: Rewriter(name, _)-> $[Rewriter[name]]
     
 rules
     gen-new-name : _ -> <gen-new-name(|$[random_])>

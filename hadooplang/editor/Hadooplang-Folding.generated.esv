@@ -22,9 +22,9 @@ folding Default folding definitions
   
   Start.Module
   MRInput.MRInputMethod
-  Rewriter.Rewriter
+  RewriterInner.RewriterInner
   BlockReturn.BlockReturn
-  Rewriter.RewriterAlias
+  RewriterInner.RewriterInnerAlias
   MapInner.MapInner
   BlockMR.BlockMR
   RedInner.RedInner

@@ -113,7 +113,7 @@ rules
 rules
     write-to-rewriter-error: w -> (w, $[Not allowed in a rewriter: write.])
     
-    constraint-error: r@Rewriter(t1, t2, t3, t4) -> errors
+    constraint-error: r@Rewriter(t1, RewriterInner(_, _, _)) -> errors
         where
             allwrites := <get-all-writes> r;
             not(<equal>(<length> allwrites, 0));
@@ -132,14 +132,14 @@ rules
  */
 rules    
     
-    rewriter-main-type: Rewriter(_, x, _, _) -> <type> <type-of> x
-    rewriter-main-type: RewriterAlias(_, x, _, _, _) -> <type> <type-of> x
+    rewriter-main-type: Rewriter(_, RewriterInner(x, _, _)) -> <type> <type-of> x
+    rewriter-main-type: (_, RewriterInnerAlias(x, _, _, _)) -> <type> <type-of> x
         
-    rewriter-params: Rewriter(_, _, params, _) -> params
-    rewriter-params: RewriterAlias(_, _, params, _, _) -> params
+    rewriter-params: Rewriter(_, RewriterInner(_, params, _)) -> params
+    rewriter-params: Rewriter(_, RewriterInnerAlias(_, params, _, _)) -> params
 
-    rewriter-number-of-args: Rewriter(_, _, params, _) -> <length> params
-    rewriter-number-of-args: RewriterAlias(_, _, params, _, _) -> <length> params
+    rewriter-number-of-args: Rewriter(_, RewriterInner(_, params, _)) -> <length> params
+    rewriter-number-of-args: Rewriter(_, RewriterInnerAlias(_, params, _, _)) -> <length> params
 
     constraint-error: Rewrite(resource, RewriteRef(rewriter), _) -> (resource, $[Wrong type!])
         where not(<equal>(<rewriter-main-type> <get-node> rewriter, <type><type-of> resource))
@@ -331,14 +331,14 @@ rules
  * A note will be used to inform the developper that he is doing
  * unchecked stuff
  */
-  extra-index-hook: r@RewriterAlias(_, p, ps, _, _) -> <fail>
+  extra-index-hook: r@Rewriter(_, RewriterInnerAlias(p, ps, _, _)) -> <fail>
     where
         RewriterParameter(_, pname{[ns|path]}) := p;
         <put-node> Use([ns|path]);
         <map(fake-use)> ps
   fake-use: Parameter(_, pname{[ns|path]}) -> <put-node> Use([ns|path])
 
-  constraint-note: r@RewriterAlias(_, _, _, _, _) ->
+  constraint-note: r@Rewriter(_, RewriterInnerAlias(_, _, _, _)) ->
     (r, $[Rewriter aliases let you call external commands. The input and
     output types are not checked in any form at editing level.
     

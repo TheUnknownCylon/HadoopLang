@@ -250,11 +250,9 @@ exports
     ":" MRKey ":" ReduceIterator BlockMR -> RedInner{cons("RedInner"), scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}
     
 
-    "rewriter" ID RewriterParameter CommaParameter* BlockReturn
-                                            -> Rewriter {cons("Rewriter"), scope(Dataset, Datavar)}
-
-    "rewriter" ID RewriterParameter CommaParameter* "alias" {JAVACLASS "."}* "returns" Type
-                                            -> Rewriter {cons("RewriterAlias"), scope(Dataset, Datavar)}
+    "rewriter" ID RewriterInner  -> Rewriter {cons("Rewriter"), scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}    
+    RewriterParameter CommaParameter* BlockReturn -> RewriterInner{cons("RewriterInner"), scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}
+    RewriterParameter CommaParameter* "alias" {JAVACLASS "."}* "returns" Type -> RewriterInner{cons("RewriterInnerAlias"), scope(Dataset, Datavar, Rewriter, Mapper, Reducer)}
 
     Type ID -> MRKey      {cons("MapReduceKey")}
 

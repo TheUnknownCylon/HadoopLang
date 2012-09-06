@@ -20,7 +20,7 @@ imports
 rules
 
   nam-annotate-names(|def-path):
-    DatasetRef(e_170707) -> DatasetRef(<nam-annotate-use(|Datavar())> e_170707)
+    DatasetRef(d_13799) -> DatasetRef(<nam-annotate-use(|Datavar())> d_13799)
 
   nam-get-scope-types :
     Module(_, _, _) -> [ Dataset()
@@ -76,10 +76,28 @@ rules
                          ]
 
   nam-get-scope-types :
-    Rewriter(_, _, _, _) -> [Dataset(), Datavar()]
+    Rewriter(_, _) -> [ Dataset()
+                      , Datavar()
+                      , Rewriter()
+                      , Mapper()
+                      , Reducer()
+                      ]
 
   nam-get-scope-types :
-    RewriterAlias(_, _, _, _, _) -> [Dataset(), Datavar()]
+    RewriterInner(_, _, _) -> [ Dataset()
+                              , Datavar()
+                              , Rewriter()
+                              , Mapper()
+                              , Reducer()
+                              ]
+
+  nam-get-scope-types :
+    RewriterInnerAlias(_, _, _, _) -> [ Dataset()
+                                      , Datavar()
+                                      , Rewriter()
+                                      , Mapper()
+                                      , Reducer()
+                                      ]
 
   nam-get-scope-types :
     loop(_) -> [Dataset(), Datavar()]
@@ -148,16 +166,10 @@ rules
     Reducer(x, _) -> <nam-get-def(|Reducer())> x
 
   nam-get-definition-key :
-    Rewriter(x, _, _, _) -> x
+    Rewriter(x, _) -> x
 
   nam-get-definition :
-    Rewriter(x, _, _, _) -> <nam-get-def(|Rewriter())> x
-
-  nam-get-definition-key :
-    RewriterAlias(x, _, _, _, _) -> x
-
-  nam-get-definition :
-    RewriterAlias(x, _, _, _, _) -> <nam-get-def(|Rewriter())> x
+    Rewriter(x, _) -> <nam-get-def(|Rewriter())> x
 
   nam-get-definition-key :
     MapReduceKey(_, x) -> x
@@ -202,103 +214,94 @@ rules
     ForKeyDef(x) -> <nam-get-def(|Datavar())> x
 
   nam-annotate-names(|def-path):
-    Module(b_169720, c_169720, d_169720) -> Module(b_169720{def-path}, c_169720, d_169720)
+    Module(f_13796, g_13796, h_13796) -> Module(f_13796{def-path}, g_13796, h_13796)
 
   nam-annotate-names(|def-path):
-    Import(a_169720) -> Import(a_169720{def-path})
+    Import(e_13796) -> Import(e_13796{def-path})
 
   nam-annotate-names(|def-path):
-    OneImportMapper(y_169719, z_169719) -> OneImportMapper(
-                                             <nam-annotate-use(|Module())> y_169719
-                                           , z_169719
+    OneImportMapper(c_13796, d_13796) -> OneImportMapper(
+                                           <nam-annotate-use(|Module())> c_13796
+                                         , d_13796
+                                         )
+
+  nam-annotate-names(|def-path):
+    OneImportReducer(a_13796, b_13796) -> OneImportReducer(
+                                            <nam-annotate-use(|Module())> a_13796
+                                          , b_13796
+                                          )
+
+  nam-annotate-names(|def-path):
+    OneImportRewriter(y_13795, z_13795) -> OneImportRewriter(
+                                             <nam-annotate-use(|Module())> y_13795
+                                           , z_13795
                                            )
 
   nam-annotate-names(|def-path):
-    OneImportReducer(w_169719, x_169719) -> OneImportReducer(
-                                              <nam-annotate-use(|Module())> w_169719
-                                            , x_169719
-                                            )
+    ReducerRef(x_13795) -> ReducerRef(<nam-annotate-use(|Reducer())> x_13795)
 
   nam-annotate-names(|def-path):
-    OneImportRewriter(u_169719, v_169719) -> OneImportRewriter(
-                                               <nam-annotate-use(|Module())> u_169719
-                                             , v_169719
-                                             )
+    RewriteRef(w_13795) -> RewriteRef(<nam-annotate-use(|Rewriter())> w_13795)
 
   nam-annotate-names(|def-path):
-    ReducerRef(t_169719) -> ReducerRef(<nam-annotate-use(|Reducer())> t_169719)
+    MapperRef(v_13795) -> MapperRef(<nam-annotate-use(|Mapper())> v_13795)
 
   nam-annotate-names(|def-path):
-    RewriteRef(s_169719) -> RewriteRef(<nam-annotate-use(|Rewriter())> s_169719)
+    DatasetDef(q_13795, r_13795) -> DatasetDef(q_13795{def-path}, r_13795)
 
   nam-annotate-names(|def-path):
-    MapperRef(r_169719) -> MapperRef(<nam-annotate-use(|Mapper())> r_169719)
+    Store(p_13795) -> Store(<nam-annotate-use(|Dataset())> p_13795)
 
   nam-annotate-names(|def-path):
-    DatasetDef(m_169719, n_169719) -> DatasetDef(m_169719{def-path}, n_169719)
+    MRInputSet(h_13795) -> MRInputSet(<nam-annotate-use(|Dataset())> h_13795)
 
   nam-annotate-names(|def-path):
-    Store(l_169719) -> Store(<nam-annotate-use(|Dataset())> l_169719)
+    RewriterParameter(z_13794, a_13795) -> RewriterParameter(z_13794, a_13795{def-path})
 
   nam-annotate-names(|def-path):
-    MRInputSet(d_169719) -> MRInputSet(<nam-annotate-use(|Dataset())> d_169719)
+    Parameter(x_13794, y_13794) -> Parameter(x_13794, y_13794{def-path})
 
   nam-annotate-names(|def-path):
-    RewriterParameter(v_169718, w_169718) -> RewriterParameter(v_169718, w_169718{def-path})
+    Parameter(v_13794, w_13794) -> Parameter(v_13794, w_13794{def-path})
 
   nam-annotate-names(|def-path):
-    Parameter(t_169718, u_169718) -> Parameter(t_169718, u_169718{def-path})
+    ReduceIterator(t_13794, u_13794) -> ReduceIterator(t_13794, u_13794{def-path})
 
   nam-annotate-names(|def-path):
-    Parameter(r_169718, s_169718) -> Parameter(r_169718, s_169718{def-path})
+    Mapper(r_13794, s_13794) -> Mapper(r_13794{def-path}, s_13794)
 
   nam-annotate-names(|def-path):
-    ReduceIterator(p_169718, q_169718) -> ReduceIterator(p_169718, q_169718{def-path})
+    Reducer(p_13794, q_13794) -> Reducer(p_13794{def-path}, q_13794)
 
   nam-annotate-names(|def-path):
-    Mapper(n_169718, o_169718) -> Mapper(n_169718{def-path}, o_169718)
+    Rewriter(h_13794, i_13794) -> Rewriter(h_13794{def-path}, i_13794)
 
   nam-annotate-names(|def-path):
-    Reducer(l_169718, m_169718) -> Reducer(l_169718{def-path}, m_169718)
+    MapReduceKey(y_13793, z_13793) -> MapReduceKey(y_13793, z_13793{def-path})
 
   nam-annotate-names(|def-path):
-    Rewriter(b_169718, c_169718, d_169718, e_169718) -> Rewriter(b_169718{def-path}, c_169718, d_169718, e_169718)
+    DatasetDefStatement(w_13793, x_13793) -> DatasetDefStatement(w_13793{def-path}, x_13793)
 
   nam-annotate-names(|def-path):
-    RewriterAlias(w_169717, x_169717, y_169717, z_169717, a_169718) -> RewriterAlias(
-                                                                         w_169717{def-path}
-                                                                       , x_169717
-                                                                       , y_169717
-                                                                       , z_169717
-                                                                       , a_169718
-                                                                       )
+    ForloopSet(l_13793, m_13793, n_13793) -> ForloopSet(l_13793{def-path}, m_13793, n_13793)
 
   nam-annotate-names(|def-path):
-    MapReduceKey(u_169717, v_169717) -> MapReduceKey(u_169717, v_169717{def-path})
+    ForloopDict(h_13793, i_13793, j_13793, k_13793) -> ForloopDict(h_13793, i_13793{def-path}, j_13793, k_13793)
 
   nam-annotate-names(|def-path):
-    DatasetDefStatement(s_169717, t_169717) -> DatasetDefStatement(s_169717{def-path}, t_169717)
+    ForloopSet(d_13793, e_13793, f_13793, g_13793) -> ForloopSet(d_13793{def-path}, e_13793, f_13793, g_13793)
 
   nam-annotate-names(|def-path):
-    ForloopSet(h_169717, i_169717, j_169717) -> ForloopSet(h_169717{def-path}, i_169717, j_169717)
+    ForloopDict(y_13792, z_13792, a_13793, b_13793, c_13793) -> ForloopDict(
+                                                                  y_13792
+                                                                , z_13792{def-path}
+                                                                , a_13793
+                                                                , b_13793
+                                                                , c_13793
+                                                                )
 
   nam-annotate-names(|def-path):
-    ForloopDict(d_169717, e_169717, f_169717, g_169717) -> ForloopDict(d_169717, e_169717{def-path}, f_169717, g_169717)
-
-  nam-annotate-names(|def-path):
-    ForloopSet(z_169716, a_169717, b_169717, c_169717) -> ForloopSet(z_169716{def-path}, a_169717, b_169717, c_169717)
-
-  nam-annotate-names(|def-path):
-    ForloopDict(u_169716, v_169716, w_169716, x_169716, y_169716) -> ForloopDict(
-                                                                       u_169716
-                                                                     , v_169716{def-path}
-                                                                     , w_169716
-                                                                     , x_169716
-                                                                     , y_169716
-                                                                     )
-
-  nam-annotate-names(|def-path):
-    ForKeyDef(t_169716) -> ForKeyDef(t_169716{def-path})
+    ForKeyDef(x_13792) -> ForKeyDef(x_13792{def-path})
 
   nam-get-def(|n) =
     fail

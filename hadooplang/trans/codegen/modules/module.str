@@ -78,7 +78,7 @@ rules
             //we do not need to create files for alias rewriters
             // (we have only Rewriter and RewriterAlias)
             (
-                Rewriter(_, _, _, _) := rewriter;
+                Rewriter(_, RewriterInner(_, _, _)) := rewriter;
                 (javafile, rewriterslist) := <to-java> rewriter
             <+
                 javafile := [];

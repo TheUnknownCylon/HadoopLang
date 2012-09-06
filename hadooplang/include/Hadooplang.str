@@ -11,8 +11,9 @@ signature
     ForloopSet          : ID * Exp * LoopBlock -> LoopStatement
     loopblock           : Block -> LoopBlock
     MapReduceKey        : Type * ID -> MRKey
-    RewriterAlias       : ID * RewriterParameter * List(CommaParameter) * List(JAVACLASS) * Type -> Rewriter
-    Rewriter            : ID * RewriterParameter * List(CommaParameter) * BlockReturn -> Rewriter
+    RewriterInnerAlias  : RewriterParameter * List(CommaParameter) * List(JAVACLASS) * Type -> RewriterInner
+    RewriterInner       : RewriterParameter * List(CommaParameter) * BlockReturn -> RewriterInner
+    Rewriter            : ID * RewriterInner -> Rewriter
     RedInner            : MRKey * ReduceIterator * BlockMR -> RedInner
     MapInner            : MRKey * Parameter * BlockMR -> MapInner
     Reducer             : ID * RedInner -> Reducer

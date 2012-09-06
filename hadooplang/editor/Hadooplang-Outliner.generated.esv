@@ -14,11 +14,9 @@ outliner Default outliner
   
   Start.Module
   MRInput.MRInputMethod
-  Rewriter.Rewriter
   BlockReturn.BlockReturn
   If.If
   LoopStatement.ForloopSet
   LoopStatement.ForloopDict
   LoopStatement.ForloopSet
   LoopStatement.ForloopDict
-  Rewriter.RewriterAlias

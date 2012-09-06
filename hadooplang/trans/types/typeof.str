@@ -112,10 +112,9 @@ rules
     type-of: Brackets(t)  -> <type-of> t    
     type-of: OpExp(op, a, b) -> Type(<type-of-op> (op, a, b), 0)
  
-rules
-    type-of: RewriterAlias(_, _, _, _, r) -> Type(<type-of> r, 0)
-    
-    type-of: Rewriter(_, _, _, block) -> <type-of> block
+rules    
+    type-of: Rewriter(_, RewriterInner(_, _, block)) -> <type-of> block
+    type-of: Rewriter(_, RewriterInnerAlias(_, _, _, r)) -> Type(<type-of> r, 0)
     type-of: BlockReturn(_, r) -> <type-of> r
        
     type-of: r@Rewrite(dataset, RewriteRef(rewriter), args) -> Type(type, ds)

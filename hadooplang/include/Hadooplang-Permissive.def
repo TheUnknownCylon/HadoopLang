@@ -243,17 +243,18 @@ exports
     "{" Statement* "return" Exp ";" "}"      -> BlockReturn        {cons("BlockReturn"), scope([[]])}
 
   context-free syntax
-    Type ID                                                                                 -> RewriterParameter {cons("RewriterParameter")}
-    Type ID                                                                                 -> Parameter         {cons("Parameter")}
-    "," Type ID                                                                             -> CommaParameter    {cons("Parameter")}
-    Type ID                                                                                 -> ReduceIterator    {cons("ReduceIterator")}
-    "mapper" ID MapInner                                                                    -> Mapper            {cons("Mapper"), scope([[]])}
-    "reducer" ID RedInner                                                                   -> Reducer           {cons("Reducer"), scope([[]])}
-    ":" MRKey ":" Parameter BlockMR                                                         -> MapInner          {cons("MapInner"), scope([[]])}
-    ":" MRKey ":" ReduceIterator BlockMR                                                    -> RedInner          {cons("RedInner"), scope([[]])}
-    "rewriter" ID RewriterParameter CommaParameter* BlockReturn                             -> Rewriter          {cons("Rewriter"), scope([[]])}
-    "rewriter" ID RewriterParameter CommaParameter* "alias" {JAVACLASS "."}* "returns" Type -> Rewriter          {cons("RewriterAlias"), scope([[]])}
-    Type ID                                                                                 -> MRKey             {cons("MapReduceKey")}
+    Type ID                                                                   -> RewriterParameter {cons("RewriterParameter")}
+    Type ID                                                                   -> Parameter         {cons("Parameter")}
+    "," Type ID                                                               -> CommaParameter    {cons("Parameter")}
+    Type ID                                                                   -> ReduceIterator    {cons("ReduceIterator")}
+    "mapper" ID MapInner                                                      -> Mapper            {cons("Mapper"), scope([[]])}
+    "reducer" ID RedInner                                                     -> Reducer           {cons("Reducer"), scope([[]])}
+    ":" MRKey ":" Parameter BlockMR                                           -> MapInner          {cons("MapInner"), scope([[]])}
+    ":" MRKey ":" ReduceIterator BlockMR                                      -> RedInner          {cons("RedInner"), scope([[]])}
+    "rewriter" ID RewriterInner                                               -> Rewriter          {cons("Rewriter"), scope([[]])}
+    RewriterParameter CommaParameter* BlockReturn                             -> RewriterInner     {cons("RewriterInner"), scope([[]])}
+    RewriterParameter CommaParameter* "alias" {JAVACLASS "."}* "returns" Type -> RewriterInner     {cons("RewriterInnerAlias"), scope([[]])}
+    Type ID                                                                   -> MRKey             {cons("MapReduceKey")}
 
   context-free syntax
     ID ":=" Exp ";"                                               -> Statement     {cons("DatasetDefStatement")}

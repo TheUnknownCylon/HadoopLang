@@ -21,7 +21,7 @@ rules
         
 
 rules
-    to-java: r@RewriterAlias(_, _, _, _, _) -> None()
+    to-java: r@Rewriter(_, RewriterInnerAlias(_, _, _, _)) -> None()
     
 
 rules
@@ -40,7 +40,7 @@ rules
 rules
   to-java: Parameter(t, name) -> $[[<type'-to-java> <type-of> t] [name]]
   
-  to-java: r@Rewriter(name', mainparam, params, b@BlockReturn(commands, return)) ->
+  to-java: r@Rewriter(name', RewriterInner(mainparam, params, b@BlockReturn(commands, return))) ->
     (JavaFile("hdp.rewriters", $[[name]], content), rewriters)
 
     where

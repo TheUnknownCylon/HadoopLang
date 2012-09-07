@@ -272,7 +272,7 @@ The described language allows the development of an Hadoop applications by focus
 * Add a built-in type DONTCARE: _. This can for example be used to omit ``unused`` errors at places were variables must be defined (e.g. you are not interested in dict-keys).
 * More, or custom, input formats.
 * Adding custom types. For example have pre-defined datastructs (see example below). This will also involve serialization and de-serialization of these datastructs.
-
+* Better error reporting. Now default Hadoop errors are given. Hadoop errors are often difficult to interpret. A better error reporting mechanism may be built it, but this may come at the cost of lower performance (my idea is then: add try/catch blocks at points were errors are to be expected).
 
 Example for custom datastructs
     

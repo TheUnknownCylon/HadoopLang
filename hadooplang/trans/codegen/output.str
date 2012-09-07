@@ -38,6 +38,8 @@ rules
   	import org.hadooplanghelpers.ArrayWritableHDP;
  	import org.hadooplanghelpers.ArrayListWritable;
  	import org.hadooplanghelpers.MapWritableHdp;
+    import org.hadooplanghelpers.XMLInput;
+
 
 	import org.apache.hadoop.io.Text;
 	import org.apache.hadoop.io.DoubleWritable;
@@ -49,7 +51,7 @@ rules
 
     import org.apache.hadoop.io.ArrayWritable; 
     import org.apache.hadoop.io.MapWritable;
-
+    
 	import org.apache.hadoop.mapreduce.Mapper;
 	import org.apache.hadoop.mapreduce.Reducer;
 	
@@ -58,6 +60,7 @@ rules
 	import org.apache.hadoop.mapreduce.Job;
 	import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 	import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+	import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
     import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
     import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
     

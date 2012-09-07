@@ -17,6 +17,7 @@ imports
   trans/codegen/statements
   trans/codegen/expressions
   trans/codegen/inputs
+  trans/codegen/jobconf
   
   trans/codegen/names
   
@@ -136,6 +137,7 @@ rules
         DatasetDef(varname, MapReduceChain(input, MRMapper(MapperRef(map')), MRReducer(ReducerRef(reduce')))) ->
             (javacode, map', reduce')
         where
+            jobconfname := <gen-new-name(|"jobconf")>;
             jobname := <gen-new-name(|"job")>;
             outputname := $[job_[varname]];
 
@@ -148,7 +150,7 @@ rules
             mapperclass := <name-of> m;
             reducerclass := <name-of> r;
             
-            jobinput := <to-java-job-input(|jobname)> input;
+            (jobinput, jobconf) := <to-java-job-input(|jobname,JobConf([]))> input;
             joboutput := <to-java-job-output(|jobname)> (varname, outputname);
 
             TwoType(mapoutputkeyclass', mapoutputvalueclass') := <innertype> <type> <type-of> mapper;
@@ -165,7 +167,10 @@ rules
             /** JOB **/
               Deletedir.deleteDir("[outputname]");
               
-              Job [jobname] = new Job(new Configuration(), "Job [jobname]");
+              /* Job configuration */
+              [<conf-to-java(|jobconfname)> jobconf]
+              
+              Job [jobname] = new Job([jobconfname], "Job [jobname]");
               [jobname].setMapperClass([mapperclass].class);
               [jobname].setReducerClass([reducerclass].class);
 
@@ -190,11 +195,11 @@ rules
      */
     
     //Input from a hadoop job input
-    to-java-job-input(|jobname): MRInputMethod(method, params) -> javacode
-        where javacode := <to-java-input-job(|jobname, params)> DataInput(method)
+    to-java-job-input(|jobname, jobconf): MRInputMethod(method, params) -> (javacode, jobconf')
+        where (javacode, jobconf') := <to-java-input-job(|jobname, params, jobconf)> DataInput(method)
     
     //Input from a previous job
-    to-java-job-input(|jobname): MRInputSet(ref) -> javacode
+    to-java-job-input(|jobname, jobconf): MRInputSet(ref) -> (javacode, jobconf)
         where
             DatasetDef(defname, deftype) := <get-node> ref;
             inputdir := $[job_[defname]]
@@ -203,7 +208,6 @@ rules
                 [jobname].setInputFormatClass(SequenceFileInputFormat.class);
                 SequenceFileInputFormat.addInputPath([jobname], new Path("[inputdir]"));
             ]
-            //FileInputFormat.setInputPaths([jobname], new Path("[inputdir]"));
     
         
     /**

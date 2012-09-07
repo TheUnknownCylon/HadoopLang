@@ -12,16 +12,38 @@ imports
   trans/types/typeof
   trans/inputs/inputs
   
+  trans/codegen/jobconf
   trans/codegen/statements
   trans/codegen/expressions
 
 rules
      
-     to-java-input-job(|jobname, params): DataInput("lines") -> javacode
+     to-java-input-job(|jobname, args, config): DataInput("lines") -> (javacode, config)
         where
-            [file|_] := params;
+            [file] := args;
             javacode := $[
                 FileInputFormat.setInputPaths([jobname], [<to-java> file]);
             ]
      
      
+     to-java-input-job(|jobname, args, config): DataInput("keyvalue") -> (javacode, config')
+        where
+            [file,separator] := args;
+            javacode := $[
+                [jobname].setInputFormatClass(KeyValueTextInputFormat.class);
+                KeyValueTextInputFormat.addInputPath([jobname], new Path([<to-java> file]));
+            ];
+            config' := <jobconfAddSetting(|config)> (String("\"key.value.separator.in.input.line\""), separator )
+     
+     
+     to-java-input-job(|jobname, args, config): DataInput("xml") -> (javacode, config')
+        where
+            [file,opentag,closetag] := args;
+            javacode := $[
+                [jobname].setInputFormatClass(XMLInput.class);
+                FileInputFormat.setInputPaths([jobname], [<to-java> file]);
+            ];
+            config'' := <jobconfAddSetting(|config)>  (String("\"xmlinput.start\""), opentag );
+            config'  := <jobconfAddSetting(|config'')> (String("\"xmlinput.end\""),   closetag )
+            
+            

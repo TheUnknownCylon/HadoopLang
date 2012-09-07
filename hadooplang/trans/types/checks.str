@@ -14,6 +14,7 @@ imports
   trans/types/operators
 
   trans/types/sidechecks
+  trans/inputs/inputs
 
 rules
     typecheck(|typetocheckfor): vartocheck -> <equal>(<type> <type-of> vartocheck, typetocheckfor)
@@ -39,9 +40,7 @@ rules
               errors := (o, $[Operator has no support for types [<type-name><type-type-of> a] and [<type-name><type-type-of> b].])  
             )
     
-    constraint-error-op: (OpPlus(), x, y)   -> <validate_both_sides(|[Num(), String()])>(x, y)
-        where <debug(!"X en y: ")> (x,y)
-    
+    constraint-error-op: (OpPlus(), x, y)   -> <validate_both_sides(|[Num(), String()])>(x, y)    
     constraint-error-op: (OpTimes(), x, y)  -> <validate_both_sides(|Num())>(x, y)
     constraint-error-op: (OpMin(), x , y)   -> <validate_both_sides(|Num())>(x, y)
     constraint-error-op: (OpDivide(), x, y) -> <validate_both_sides(|Num())>(x, y)
@@ -318,6 +317,37 @@ rules
     constraint-error: ListAddItem(list, expr) -> (expr, $[Appending wrong type to list.])
         where List(x) := <type-type-of> list; not(<typecheck(|x)> expr) 
 
+
+
+
+/**
+ * Checks for inputs
+ */
+rules
+    constraint-error: MRInputMethod(name, _) -> (name, $[Unknown input method. You can use one of: [<inputmethodspp>]])
+        where not(<fetch(?name)> <inputmethods>)
+
+    constraint-error: i@MRInputMethod(name, args) -> (i, $[Wrong number of arguments, expected [<length> reqargs] argument(s).])
+        where
+            reqargs := <args-of> DataInput(name);
+            not(<equal>(<length> args, <length> reqargs))
+    
+    constraint-error: MRInputMethod(name, args) -> <input-args-typecheckhelper(|reqargs)> args
+        where reqargs := <args-of> DataInput(name)
+            
+
+    input-args-typecheckhelper(|x): [] -> []
+    input-args-typecheckhelper(|paramtypes): args -> errors
+        where 
+            [p|ps] := paramtypes;
+            [a|as] := args;
+            errors' := <input-args-typecheckhelper(|ps)> as;
+            (
+                not(<equal>(<type> <type-of> p, <type> <type-of> a));
+                errors := <union>([(a, $[Wrong type, expected [<type-of-name> p], got [<type-of-name> a].])], errors')
+              <+
+                errors := errors'
+            )
 
 /* ********************
  * Checks for forloops

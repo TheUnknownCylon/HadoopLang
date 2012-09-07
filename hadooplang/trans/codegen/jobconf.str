@@ -1,0 +1,26 @@
+module trans/codegen/jobconf
+
+imports
+    trans/codegen/types
+
+signature constructors
+    JobConf: [JobConfItem] -> JobConf
+    JobConfItem: Key * Value -> JobConfItem 
+    
+rules
+    jobconfAddSetting(|config): (key, value) -> JobConf(confitems')
+        where
+            JobConf(confitems) := config;
+            confitems' := <concat> [confitems, [JobConfItem(key, value)]]
+
+
+rules
+    conf-to-java(|confname): JobConf(items) -> javacode
+        where javacode := $[
+            Configuration [confname] = new Configuration();
+            [<concat-strings> <map(jobconfitem-to-java(|confname))> items]
+        ]
+        
+    jobconfitem-to-java(|confname): JobConfItem(key, value) ->
+        $[[confname].set([<to-java> key], [<to-java> value]);
+        ]

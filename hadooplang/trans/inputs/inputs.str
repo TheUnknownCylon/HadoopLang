@@ -14,33 +14,43 @@ imports
 
 signature constructors
     DataInput : Name -> DataInput
-
-
-
-rules
-    inputmethods: _ -> ["lines", "keyvalues", "csv"]
+    InputArg : Type * Name * Description -> InputArg
 
 
 rules
-    /* ***
-     * Each line as an input
+    type-of: InputArg(t, _, _) -> Type(t, 0)
+
+rules
+    inputmethods: _ -> ["lines", "keyvalue", "xml"]
+    inputmethodspp: _ -> ["lines, keyvalue, or xml"]
+
+rules
+    /**
+     * Key: Start of line in byte offset
+     * Value: Each line as an input
      */
-     type-of: DataInput("lines") -> Type(List(TwoType(Num(), String())), 1)
+    type-of: DataInput("lines") -> Type(List(TwoType(Num(), String())), 1)
+    args-of: DataInput("lines") -> [InputArg(String(), "folder", "The input folder.")]
+    
+    
+    /**
+     * Key: All input on a line until the separator match
+     * Value: Rest of the line
+     */
+    type-of: DataInput("keyvalue") -> Type(List(TwoType(String(), String())), 1)
+    args-of: DataInput("keyvalue") -> [InputArg(String(), "folder", "The input folder."),
+                                       InputArg(String(), "separator", "Split token, which defines the separation place.")]
+    
+    
+    /**
+     * Key: document name
+     * Output: XML doc
+     */
+    type-of: DataInput("xml") -> Type(List(TwoType(Num(), String())), 1)
+    args-of: DataInput("xml") -> [InputArg(String(), "Folder", "The input folder."),
+                                  InputArg(String(), "xml-opentag", "XML element open tag should match this string."),
+                                  InputArg(String(), "xml-opentag", "XML element close tag should match this string.")
+                                  ]
+
 
      
-//      
-// rules
-//     /** ***
-//      * Key values:
-//      *  Input file is a set of lines, per line:
-//      *    Key(String)\tValue(String)\n
-//      */
-//      type-of: Input("keyvalues") -> TwoType(Type(String(), 1), Type(String(), 1))
-//      
-//      
-//      
-// rules
-//     /* ***
-//      * csv
-//      * 
-//      */

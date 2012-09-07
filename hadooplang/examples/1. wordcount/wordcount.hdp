@@ -1,0 +1,39 @@
+module wordcount
+
+from hdplib import rewriter tokenize;
+
+/**
+ * Each mapper gets a string. The string input is split on a space,
+ * for each token, write a 1 along with the token. 
+ */
+mapper maptoterms : Number offset : String sentence {
+    
+    words := rewrite sentence with tokenize, " ";
+    for word in words {
+        write word: 1;
+    }
+}
+
+/**
+ * All counts (1s) from the maptoterms for token key, are
+ * collected and a sum of these values is calculated.
+ */
+reducer countwords : String key : Iterator(Number) counts {
+    
+    count := 0;
+    
+    for c in counts {
+        count = count + c;
+    }
+    
+    write key: count;
+}
+
+/**
+ * Specify the job
+ */
+wordcount := input lines("dataset") ->
+                map with maptoterms ->
+                reduce with countwords;
+                
+store wordcount;

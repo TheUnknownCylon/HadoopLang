@@ -1,0 +1,36 @@
+module expressions
+
+language Hadooplang
+
+setup Hadooplang program header [[
+module testjobchains
+    mapper mapA  : Number docid : String text {  write docid:text; }
+    mapper mapAA : String key : String value { write 1: key+value; }
+    reducer redB : Number docid : Iterator(String) x {
+        for x2 in x { write docid:x2; }
+    }
+]]
+
+test linesinput_normal [[z:= input lines("A")       -> map with mapA -> reduce with redB;]]
+test linesinput_noargs [[z:= input lines(   )       -> map with mapA -> reduce with redB;]] 1 error
+test linesinput_toomuch [[z:= input lines("A", "B") -> map with mapA -> reduce with redB;]] 1 error
+
+test keyvalueinput1 [[z:= input keyvalue("A", "\t") -> map with mapAA -> reduce with redB;]] 0 errors
+test keyvalueinput1 [[z:= input keyvalue("A")       -> map with mapAA -> reduce with redB;]] 1 error
+test keyvalueinput2 [[z:= input keyvalue()          -> map with mapAA -> reduce with redB;]] 1 error
+test keyvalueinput3 [[z:= input keyvalue("A", "b", "c") -> map with mapAA -> reduce with redB;]] 1 error
+
+
+test xmlinput1 [[z:= input xml("A", "<a>", "</a>")  -> map with mapA -> reduce with redB; ]]
+test xmlinput2 [[z:= input xml() -> map with mapA   -> reduce with redB;                  ]] 1 error
+test xmlinput3 [[z:= input xml("A", "<a>") -> map with mapA -> reduce with redB;          ]] 1 error
+test xmlinput3 [[z:= input xml("A", "<a>", "</a>", "<a>") -> map with mapA -> reduce with redB;]] 1 error
+
+test linesinput_argtype [[z:= input lines(0)         -> map with mapA -> reduce with redB;]] 1 error
+test linesinput_novalidinput [[z:= input nonononon() -> map with mapA -> reduce with redB;]] 1 error
+
+
+setup Hadooplang program footer [[
+
+    store z;
+]]

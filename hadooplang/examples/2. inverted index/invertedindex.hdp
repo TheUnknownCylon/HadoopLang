@@ -1,0 +1,28 @@
+module invertedindex
+
+from hdplib import rewriter tokenize;
+
+mapper docwithid : String docid : String sentence {
+    words := rewrite sentence with tokenize, " ";
+    for word in words {
+        write word: docid;
+    }
+}
+
+reducer buildindex : String token : Iterator(String) docids {
+    //create a list to store all the document ids in
+    indexlist := String[];
+    
+    //append all docids to the indexlist
+    for docid in docids {
+        indexlist[] = docid;
+    }
+    
+    write token : indexlist;
+}
+
+invertedindex := input keyvalue("documents", ":") ->
+                    map with docwithid ->
+                    reduce with buildindex;
+                    
+store invertedindex;

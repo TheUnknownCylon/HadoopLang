@@ -1,5 +1,6 @@
 /home/remco/documents/HadoopLang/hadooplang/include/hadooplang.ctree: \
 	/home/remco/documents/HadoopLang/hadooplang/trans/codegen/names.str \
+	/home/remco/documents/HadoopLang/hadooplang/trans/codegen/jobconf.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/codegen/inputs.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/codegen/expressions.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/codegen/statements.str \
@@ -18,6 +19,7 @@
 	/home/remco/documents/HadoopLang/hadooplang/trans/types/checks.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/check.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/index.str \
+	/home/remco/documents/HadoopLang/hadooplang/trans/types/sidechecks.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/lib/string.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/inputs/inputs.str \
 	/home/remco/documents/HadoopLang/hadooplang/trans/types/typeof.str \

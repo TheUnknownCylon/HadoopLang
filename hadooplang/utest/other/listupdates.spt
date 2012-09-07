@@ -3,41 +3,40 @@ module listupdates
 language Hadooplang
 
 setup Hadooplang program header [[
-  module testjobchains
-
-  mapper parseinput : Number docid : String text {
+    module testjobchains
+    
+    mapper testje : Number docid : String text {
+    
 ]]
 
-test addelemtolist1 [[
-    l := String[];
-    l[] = "aa";        
-}]] 0 errors
+test listupdates1 [[
+        l   := String[];
+        l[]  = "aa";
+]]
 
+test listupdates2 [[
+	    l := String{};
+	    l["a"] = "aa"; 
+]]
 
-test addelemtodict2 [[
-    l := String{};
-    l["a"] = "aa";        
-}]] 0 errors
+test listupdates3 [[
+	    l := String{};
+	    l[1] = "aa"; //only string idices  
+]] 1 error
 
+test listupdates4 [[
+	    l := String[];
+	    z := l[1];    //no direct access allowed
+]] 1 error
 
-test addelemtodict3 [[
-    l := String{};
-    l[1] = "aa"; //only string idices        
-}]] 1 errors 
-
-test addelemtodict4 [[
-    l := String[];
-    z := l[1];        
-}]] 1 errors
-
-
-test addelemtodict5 [[
-    l := String{};
-    z := l["a"];
-}]] 1 errors
-
+test listupdates5 [[
+	    l := String{};
+	    z := l["a"];  //no direct access allowed
+]] 1 error
 
 setup Hadooplang program footer [[
-    write docid : 1;
-  }
+        write docid:text;
+    }
+    
+    
 ]]

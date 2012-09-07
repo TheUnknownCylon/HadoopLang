@@ -10,17 +10,19 @@ The main motivation for the existence of this language is because the implementa
 ###Motivation (2)
 In certain computer applications it is not unusual to have datasets containing gigabytes, or terabytes of data. In order to find information relatively quickly from these datasets, a MapReduce framework can be used. Using such a framework, information is stored at multiple computers in a network. Individual computers in such a network do not necessarily have all information available. With MapReduce information can be gathered and analyzed from this dataset. Note that analyzing datasets on large clusters may be expensive, because a lot of computers are running in parallel for one MapReduce job.
 
-One popular MapReduce framework is Hadoop. With Hadoop, map and reduce tasks can be specified in Java, by writing mapper and reducer classes. After this, a job, or an sequence of jobs, can be created and executed in Java. Unfortunately using Hadoop with Java comes with some difficulties. Not all errors can be detected by the Java compiler. The kind of errors can be wrong job setup, or wrong map/reduce specifications. One can also easily make traditional programming errors, such as getting uninitialized indices from a list. As said before, a MapReduce job can be expensive, failing a job several times before getting it right can make it even more expensive.  HadoopLang tries to overcome these difficulties; using HadoopLang all (or most) boilerplate code is hidden for the developer. As a MapReduce job may also be time-expensive, it tries to optimize code where possible, by using fast constructions.
+One popular MapReduce framework is Hadoop. With Hadoop, map and reduce tasks can be specified in Java, by writing mapper and reducer classes. After this, a job, or an sequence of jobs, can be created and executed in Java. The job specifies the which input data should be used, and how it should be map/reduced. 
+
+Unfortunately using Hadoop with Java comes with some difficulties. Not all errors can be detected by the Java compiler. The kind of errors can be wrong job setup, or wrong map/reduce specifications. One can also easily make traditional programming errors, such as getting uninitialized indices from a list. As said before, a MapReduce job can be expensive, failing a job several times before getting it right can make it even more expensive.  HadoopLang tries to overcome these difficulties; using HadoopLang all (or most) boilerplate code is hidden for the developer. As a MapReduce job may also be time-expensive, HadoopLang tries to optimize code for speed where possible, by using fast constructions.
 
 
 ###MapReduce in a nutshell
 In this section the MapReduce jobs are explained in a nutshell.
 
-* Input: Each job takes input from an existing dataset. The input is parsed and each input entry is given to a mapper.
+* Input: Each job takes input from an existing dataset. The input is parsed and split up into different input entries. Each input entry is given to a mapper.
 * Mapper: For each input entry a mapper is started. The mapper can analyze and rewrite the data in any way, but independently of all other mappers. After it, the mapper outputs a key, value pair.
-* Reducer: For each unique key, all values (from different computers) are aggregated and given to a reducer. In other words: for each unique term in the mapper keys output, one reducer is started. This reducer can iterate over all all mapper-output-values, and analyze also this data. The reducer also writes a key, value pair.
+* Reducer: For each unique key, all values (from different computers) are aggregated and given to a reducer. In other words: for each unique term in the mapper keys output, one reducer is started. This reducer can iterate over all all mapper-output-values, so one can analyze this data. The reducer also writes a key, value pair.
 
-Once a job is finished, one can start a new mapreduce job, by taking a reducer output as new input.
+Once a job is finished, one can start a new MapReduce job, by taking a reducer output as new input.
 
 Language compilation
 ---------------------
@@ -31,7 +33,7 @@ Compilation is not possible when there are code-related errors given in the IDE.
 
 Language types
 --------------
-Java and Hadoop both have different types. For example, text in Hadoop are Text-objects, where Java uses String-objects. When implementing a Hadoop-job in Java, the developer has to think of type conversions to make. Using HadoopLang, this is done automatically, and the developer does not have to concern these type conversions.
+Java and Hadoop both have different types. For example, text in Hadoop is represented by Text-objects, where Java uses String-objects. When implementing an Hadoop-job in Java, the developer has to convert types in an explicit way. Using HadoopLang, this is done automatically, and the developer does not have to concern these type conversions.
 
 The available types are:
 
@@ -133,23 +135,25 @@ It is also possible to filter out list elements while looping. A filter is a boo
     }
     
 
-Modules (Please have a look at the known bugs section)
+Modules
 -------
 HadoopLang is modular. All code goes into modules. Each module should be placed in a separate file. A module starts with
 ``module <modulename>``. After it, imports, rewriter-, mapper-, reducer-, dataset definitions,  and store statements can follow.
 
 
 ###Re-usability
+__Before using imports, please have a look at the known bugs section!__
+
 It is possible to re-use rewriters, mappers and reducers from other modules. They can easily be imported with the following commands
 
-0* ``from <modulename> import rewriter <name>;``
+* ``from <modulename> import rewriter <name>;``
 * ``from <modulename> import mapper <name>;``
 * ``from <modulename> import reducer <name>;``
  
 
 Rewriters
 ---------
-Rewriters can be considers to be methods, however rewriters can not have states. A rewriter always takes one argument, and optionally other parameters. It always returns one value. A single point of return is forced, as the last expressions of a rewriter should always be a return.
+Rewriters can be considers to be methods, however rewriters can not store their state; on each call, the rewriter is its initial state. A rewriter always takes one argument, and optionally more arguments. It always returns one value. A single point of return is forced, as the last expressions of a rewriter should always be a return.
 
     rewriter <name> <inputtype> <inputvar> [, <typeargi> <varargi>]* {
         <statements>
@@ -167,8 +171,7 @@ Example:
     //use (in a mapper, reducer, or other rewriter)
     newnumber := rewrite 12 with customadd, 8;
     //newnumber now has value 20
-
-
+   
     
 Mappers and reducers
 --------------------
@@ -193,7 +196,6 @@ Some notes:
 * A rewriter value can only be of type ``Iterator(t)``, which can be used to iterate over all map outputs for ``<keyname>``.
 
 
-
 Creating a job
 --------------
 The syntax for job creating is as following:
@@ -209,10 +211,27 @@ Example:
     x2 := input x1 -> map with copyA -> reduce with copyB;
     store x2; 
 
-Errors are raised when inputs for a mapper or reducer are of a wrong type. It is currently not possible to re-use a stored set as input for a new job. This is because there was no time left in the assignment for writing serialize and deserialize methods for the custom Hadoop types (dict and list).
+Editor errors are raised when inputs for a mapper or reducer are of a wrong type. It is currently not possible to re-use a _stored_ set as input for a new job. This is because there was no time left in the assignment for writing serialize and deserialize methods for the custom Hadoop types (dict and list).
 
 **Important** Existing output folders are automatically deleted. For now outputfolders get the name ``job_<varname> `` when calling ``<varname> := input (...);``.
 
+
+Datainputs
+----------
+HadoopLang has support for three different input types: _lines_, _keyvalue_, and _xml_. Currently, these types are part of the language and none can be added or removed.
+
+* _lines_ takes one argument: the input directory. Each line in the input files is treated as a new input entry. The key is the byte offset of the line start in its file (Number). The value is the lines content (String).
+* _keyvalue_ takes two arguments: the input directory, and a separator. As with _lines_, each line is read as a new input entry. The part of the line up to the separator is given to the mapper as the _key_ (String), the rest of the line is given to the mapper as _value_ (String).
+* _xml_ takes three arguments: the input directory, open tag, and close tag. All text between a open-close tag match is given to the mapper as value. The key is an offset value (Number).
+
+
+Examples:
+
+    x := input lines("dataset") -> (...);
+    x := input keyvalue("dataset", "\t") -> (...);
+    x := input xml("movies", "<movie>", "</movie>") -> (...);
+    
+It is also possible to chain results from an already executed map/reduce. See the previous section ("Creating a job").
     
 
 Optimizations
@@ -243,15 +262,15 @@ Future work
 The described language allows the development of an Hadoop applications by focusing only on the Map/Reduce job, without concerning type conversions, speed optimizations and boilerplate code. Unfortunately not all Hadoops strong points are possible with this language (remember: it was only a study excessive of roughly 1.5 / 2 EC). Some ideas on how this language can be improved:
 
 * Other code optimizations (see also the previous section)
-* Support for combiners
-* Support for sorters
+* Support for combiners, which are actually reducers. I have to study some theory on the subject first.
+* Support for partitioners.
+* Support for sorters.
 * Let the developer choose output folders. Now the jobname is used.
-* Distinguish integers and doubles, may also increase spee (but that needs further investigation to be sure).
+* Distinguish integers and doubles, may also increase speed (but that needs further investigation to be sure).
 * Give arguments to mappers and reducers, can be easily implemented by setting values to a job-config.
 * Chain several maps. This is possible in Hadoop with a chained mapper job. Hadooplang may generate better code for this, by merging mappers on forehand. This may reduce the number of required type-conversions from Hadoop to Java and the other way around.
 * Add a built-in type DONTCARE: _. This can for example be used to omit ``unused`` errors at places were variables must be defined (e.g. you are not interested in dict-keys).
-* More input formats
-* Custom input formats
+* More, or custom, input formats.
 * Adding custom types. For example have pre-defined datastructs (see example below). This will also involve serialization and de-serialization of these datastructs.
 
 
@@ -271,10 +290,11 @@ Several examples can be found in the examples directory (which is ./utest/_demoa
 
 Known bugs
 ----------
-As far as I know, there are only a few bugs at the moment. On a save operation, the analysis crashes. All included .hdp modules are required to be opened in the editor, and resolving objects to other files do not work.
-Also some tests are failing (I will have to fix those before handing in the assignment). 
+As far as I know, there are only a few bugs at the moment. On a save operation, the analysis may sometimes crashes. All included .hdp modules are required to be opened in the editor, and resolving objects to other files does not work. 
 
 There seems also to be a bug related to Spoofax. When the HadoopLang syntax is altered, make sure you also alter both the ``/syntax/Hadooplang.sdf`` and ``/systax/grammar/Expressions.sdf``. Adding and removing a space is fine. My guess is that something goes wrong with caching compilations.
+
+Finally: Java keywords should not be used as variable names. I know it's stupid and I blame myself for it. I only found this out at a very late stage of development. A fix will be underway, but after handing in the assignment.
 
 Other than that, I am not aware of other bugs. Unfortunately there is no way to be sure. If you find one, please contact me at ``TheUnknownCylon``@GitHub or ``TheUC``@freenode.
 

@@ -2,11 +2,14 @@ module mytests
 
 from athermap import mapper parseinput; 
 
+mapper mapxyz : String token : String key {
+    write token : 1;
+}
+
 /** 
  * For each token, calculate the number of occurences.
  */
 reducer idf : String token : Iterator(Number) docids {
-
     doclist := Number[];
     
     for docid in docids {
@@ -25,6 +28,18 @@ reducer onnozelB : String token : Iterator(List(Number)) l {
     }
 }
 
-x1 := input lines("dataset") -> map with parseinput -> reduce with idf;
+mapper movietitle : Number x : String title {
+    write "movie": title;
+}
+
+reducer movietitle : String x : Iterator(String) titles {
+    for title in titles {
+        write x: title;
+    }
+}
+
+x1 := input xml("dataset_movies", "<title>", "</title>")
+        -> map with movietitle
+        -> reduce with movietitle;
 
 store x1; 

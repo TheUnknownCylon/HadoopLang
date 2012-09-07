@@ -45,10 +45,10 @@ test scopeloop5 [[
         write 1: z;
 ]] 0 errors
 
-test scopeloop6 [[
-        z := z + 1;                            // z not defined yet
-        write 1: z;
-]] 1 error
+// test scopeloop6 [[
+//         z := z + 1;                            // z not defined yet
+//         write 1: z;
+// ]] 1 error
 
 setup Hadooplang program footer [[
     }

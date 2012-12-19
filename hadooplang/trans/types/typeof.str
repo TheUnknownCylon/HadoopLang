@@ -183,6 +183,6 @@ rules
 
 rules  //in case everyting fails! Print an error!
     type-of: x -> <fail>
-        where <debug(!"ERROR, Type-of-failed: ")> x
+        //where <debug(!"ERROR, Type-of-failed: ")> x
         
         

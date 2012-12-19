@@ -34,16 +34,22 @@ rules
         <compile-log(|0)> $[=====================];        
         <compile-log(|0)> $[Begin compiling];
         errors := <filter(is-not-empty)><collect-all(constraint-error, conc)> ast;
-        (     not(equal (<length> errors, 0));
-              <compile-log(|0)> $[There are errors! Trying to compile, but no guarantees.];
-              <debug(!" Errors: ")> errors
-          <+  <compile-log(|0)> $[No errors found.]
-        );
-        ast' := <desugar-compiler> ast;
-        java := <to-java> ast';
-        <debug(!"Done ")> $[];
-        <map(to-file(|"output", java))> java;
-        <compile-log(|0)> $[Compiling finished]
+        (   
+            not(<equal>  (<length> errors, 0));
+            <compile-log(|0)> $[There are errors!];
+            <compile-log(|0)> $[Compiling cancled!];
+            <compile-log(|0)> $[];
+            <compile-log(|0)> $[Debug information follows:];
+            <debug(!" Errors: ")> errors
+          <+
+            <compile-log(|0)> $[No errors found.];
+            ast' := <desugar-compiler> ast;
+            java := <to-java> ast';
+            <debug(!"Done ")> $[];
+            <map(to-file(|"output", java))> java;
+            <compile-log(|0)> $[Compiling finished]
+        )
+
 
 
   isnone: None() -> None()

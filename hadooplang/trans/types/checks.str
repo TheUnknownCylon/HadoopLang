@@ -20,6 +20,22 @@ rules
     typecheck(|typetocheckfor): vartocheck -> <equal>(<type> <type-of> vartocheck, typetocheckfor)
 
 
+/**
+ * Errors on unresolved imports,
+ *  currently implemented with a bit of a hack, if type-of for the import fails,
+ *  it is most likely not to exist. (May give some problems if the import contains errors)
+ */
+rules
+    constraint-error: r@OneImportRewriter(m, RewriteRef(n)) -> (n, $[Could not resolve import rewriter "[n]" from module "[m]".])
+        where not(<type-of> <index-lookup> n)
+
+    constraint-error: r@OneImportMapper(m, MapperRef(n)) -> (n, $[Could not resolve import mapper "[n]" from module "[m]".])
+        where not(<type-of> <index-lookup> n)
+
+    constraint-error: r@OneImportReducer(m, ReducerRef(n)) -> (n, $[Could not resolve import reducer "[n]" from module "[m]".])
+        where not(<type-of> <index-lookup> n)
+        
+
 rules
     constraint-error: DatasetSetVar(ref, expr) -> (expr, $[Wrong type, expected [expected], got [got].])
         where
@@ -176,6 +192,13 @@ rules
                 errors := errors'
             )
 
+/**
+ * Import checks
+ */
+    constraint-error: x@OneImportRewriter(_, RewriteRef(name)) -> (x, $[f])
+        where
+            not(<index-lookup> name)
+
 
 /* ****************
  * Iterator checks
@@ -269,6 +292,11 @@ rules
                 errors := (v, $[Write statements can not have iterators as value.])
             )
 
+    constrait-error: r@RewriteRef(n) -> (r, $[Could not determine type of this rewriter.])
+        where
+            <debug(!" .... ")> r;
+            <debug(!"  ..t ")> <type-of> r;
+            not(<type-of> r)
 
 
 /**
